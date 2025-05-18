@@ -1,0 +1,5 @@
+{
+	"links": {
+		"/musiq": "./node_modules/musiq"
+	}
+}

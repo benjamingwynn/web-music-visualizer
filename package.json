@@ -1,0 +1,12 @@
+{
+	"type": "module",
+	"scripts": {
+		"start": "swes dev"
+	},
+	"devDependencies": {
+		"swes": "benjamingwynn/swes",
+		"musiq": "file:../musiq",
+		"svelte": "4",
+		"typescript": "5.8"
+	}
+}
