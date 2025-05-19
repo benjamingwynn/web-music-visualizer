@@ -48,7 +48,6 @@
 
 	function onMouse(ev) {
 		mouseLastMoved = performance.now()
-		console.log(ev.target)
 		blockHide = ev.target !== canvas && ev.target !== main
 	}
 
@@ -56,7 +55,7 @@
 		if (document.fullscreenElement) {
 			document.exitFullscreen()
 		} else {
-			document.body.requestFullscreen()
+			document.querySelector("html")?.requestFullscreen()
 		}
 	}
 
@@ -118,6 +117,7 @@
 		overflow-y: auto;
 		bottom: 0;
 		background: rgba(0, 0, 255, 0.5);
+		margin-right: 1em;
 	}
 
 	canvas {
