@@ -12,7 +12,8 @@
 		"allowImportingTsExtensions": true,
 		"resolveJsonModule": true,
 		"noEmit": true,
-		"verbatimModuleSyntax": true
+		"verbatimModuleSyntax": true,
+		"types": ["swes/types.d.ts"]
 	},
 	"include": ["src"],
 	"exclude": ["node_modules"]

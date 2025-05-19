@@ -7,7 +7,7 @@
 	const all = MusicCanvas.registeredVisualizationsStore
 </script>
 
-<h1>test</h1>
+<h1>this is Options</h1>
 <h1>selected={$selectedId}</h1>
 
 <div>

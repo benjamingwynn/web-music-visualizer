@@ -52,9 +52,8 @@ export class MusicCanvas {
 		delete this.audioTracker
 	}
 
-	public async onNewAudio(analyzer: Awaited<ReturnType<typeof makeAnalyser>>, song: ArrayBuffer) {
-		const d = await analyzer(song)
-		this.audioTracker = createAudioTracker(d)
+	public async withAnalysis(analysis: Analysis) {
+		this.audioTracker = createAudioTracker(analysis)
 	}
 
 	private onFrame = () => {
@@ -81,6 +80,7 @@ export class MusicCanvas {
 		if (!v) throw new Error("not found")
 		this.currentVisualizationId.set(id)
 		this.currentVisualization = v
+		this.canvas.width = this.canvas.width // <- resets context
 		// todo: error handling
 		const drawFn = v.does(this.canvas)
 		this.currentVisualizationRender = drawFn
@@ -119,9 +119,10 @@ MusicCanvas.registerVisualization("debug", {
 			// draw stuff here
 			ctx.clearRect(0, 0, canvas.width, canvas.height)
 			ctx.fillStyle = "red"
+			ctx.font = "16px monospace"
 
 			let y = 16
-			const lines = ["hello world", "dt=" + dT]
+			const lines = ["hello world", "this is the debug visualization", "dt=" + dT]
 
 			// react to music like this
 			// music can be undefined if the music analysis is still loading or failed for some reason
@@ -135,7 +136,7 @@ MusicCanvas.registerVisualization("debug", {
 			}
 
 			for (const line of lines) {
-				ctx.fillText(line, 8, (y += 16))
+				ctx.fillText(line, canvas.width / 2, (y += 16))
 			}
 		}
 	},

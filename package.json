@@ -6,6 +6,7 @@
 	"devDependencies": {
 		"swes": "benjamingwynn/swes",
 		"musiq": "file:../musiq",
+		"@primer/octicons": "19",
 		"svelte": "4",
 		"typescript": "5.8"
 	}
