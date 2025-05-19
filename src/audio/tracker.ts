@@ -34,10 +34,10 @@ export function createAudioTracker(analysis: Analysis) {
 		// todo: optimize by looking forward first instead of looking from the start
 		currentIndexes = {beat: -1, section: -1, tatum: -1, segment: -1}
 
-		while (analysis.beats[currentIndexes.beat + 1].start <= time) currentIndexes.beat++
-		while (analysis.sections[currentIndexes.section + 1].start <= time) currentIndexes.section++
-		while (analysis.tatums[currentIndexes.tatum + 1].start <= time) currentIndexes.tatum++
-		while (analysis.segments[currentIndexes.segment + 1].start <= time) currentIndexes.segment++
+		while (analysis.beats[currentIndexes.beat + 1] && analysis.beats[currentIndexes.beat + 1].start <= time) currentIndexes.beat++
+		while (analysis.sections[currentIndexes.section + 1] && analysis.sections[currentIndexes.section + 1].start <= time) currentIndexes.section++
+		while (analysis.tatums[currentIndexes.tatum + 1] && analysis.tatums[currentIndexes.tatum + 1].start <= time) currentIndexes.tatum++
+		while (analysis.segments[currentIndexes.segment + 1] && analysis.segments[currentIndexes.segment + 1].start <= time) currentIndexes.segment++
 		console.log("successful recalculation to time", time, "is", currentIndexes.beat, currentIndexes.section, currentIndexes.tatum, currentIndexes.segment)
 	}
 
