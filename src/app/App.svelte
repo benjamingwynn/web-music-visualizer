@@ -22,6 +22,8 @@
 
 		nextFrame = requestAnimationFrame(frame)
 	}
+
+	let nextSong: () => void
 	onMount(() => {
 		canvas.height = window.innerHeight * renderScale
 		canvas.width = window.innerWidth * renderScale
@@ -84,10 +86,10 @@
 	<div class="player">
 		<p>this is the player. todo move the prev/next buttons here</p>
 		<button type="button" on:click={fullscreen}>enter/exit fullscreen (F key)</button>
-		<audio bind:this={audio} controls></audio>
+		<audio bind:this={audio} controls on:ended={() => nextSong()}></audio>
 	</div>
 
-	<Queue {musicCanvas} {onSelect} {onAnalysis} />
+	<Queue {musicCanvas} {onSelect} {onAnalysis} bind:next={nextSong} />
 
 	<aside>
 		<Options {musicCanvas} />

@@ -81,7 +81,7 @@
 		if (!newItem) return
 		handleSelection(newItem)
 	}
-	const next = () => {
+	export const next = () => {
 		shiftPosition(+1)
 	}
 	const previous = () => {
