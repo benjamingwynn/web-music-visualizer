@@ -3,7 +3,7 @@ import {MusicCanvas} from "../audio/canvas.ts"
 MusicCanvas.registerVisualization("auroraWaves", {
 	info: {
 		name: "Aurora Waves",
-		author: "Claude",
+		author: "Claude 3.7 Sonnet",
 		description: "An ethereal aurora borealis-inspired visualization that reacts organically to music",
 	},
 	does: (canvas) => {

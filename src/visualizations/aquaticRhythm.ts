@@ -3,7 +3,7 @@ import {MusicCanvas} from "../audio/canvas.ts"
 MusicCanvas.registerVisualization("aquaticRhythm", {
 	info: {
 		name: "Aquatic Rhythm",
-		author: "Claude",
+		author: "Claude 3.7 Sonnet",
 		description: "An underwater ecosystem that evolves and dances to the rhythm of music, featuring bioluminescent creatures and dynamic water currents",
 	},
 	does: (canvas) => {

@@ -113,7 +113,7 @@ MusicCanvas.registerVisualization("circles", {
 					// type DetectedSection = {
 					// 	start: number;
 					// 	confidence: number;
-					// 	keys: Float32Array;
+					// 	keys: Float32Array; // 24 length for the 24 minor keys, each is a confidence 0-1
 					// 	index: number;
 					// 	bpm: StatisticalRange;
 					// 	perceivedLoudness: StatisticalRange;

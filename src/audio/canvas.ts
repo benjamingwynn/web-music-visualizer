@@ -1,8 +1,9 @@
 import type {Analysis, DetectedBeat, DetectedSection, DetectedSegment, PositionEstimate} from "musiq"
 import {createAudioTracker, type AudioTracker, type AudioTrackerContext} from "./tracker.ts"
+export {type AudioTrackerContext}
 import {writable} from "svelte/store"
 import {makeAnalyser} from "musiq"
-
+export type {DetectedBeat, DetectedSection, DetectedSegment, PositionEstimate}
 //
 
 type VisualizationRender = (deltaTime: number, music?: AudioTrackerContext) => void
