@@ -5,10 +5,29 @@
 
 	const selectedId = musicCanvas.currentVisualizationId
 	const all = MusicCanvas.registeredVisualizationsStore
+
+	const next = () => {
+		const i = $all.findIndex(([x]) => x === $selectedId)
+		const n = $all[i + 1]
+		if (n) {
+			musicCanvas.startVisualization(n[0])
+		} else {
+			musicCanvas.startVisualization($all[0][0])
+		}
+	}
 </script>
 
+<svelte:window
+	on:keydown={(ev) => {
+		if (ev.key === "n") {
+			ev.preventDefault()
+			next()
+		}
+	}}
+/>
+
 <h1>this is Options</h1>
-<h1>selected={$selectedId}</h1>
+<h1>press N for next. selected={$selectedId}.</h1>
 
 <div>
 	{#each $all as [id, vis]}
@@ -20,8 +39,8 @@
 			}}
 		>
 			<h2>{vis.info.name}</h2>
-			<h2>{vis.info.author}</h2>
-			<h3>{vis.info.description}</h3>
+			<h3>{vis.info.author}</h3>
+			<h4>{vis.info.description}</h4>
 		</button>
 	{/each}
 </div>
@@ -34,6 +53,7 @@
 
 	button {
 		display: grid;
+		padding: 0.5em 0.2em;
 	}
 
 	button.active {
@@ -47,5 +67,14 @@
 		margin: 0;
 		font-weight: normal;
 		text-align: left;
+	}
+
+	h2 {
+		font-weight: bold;
+		font-size: 1.2em;
+	}
+
+	h3 {
+		margin-bottom: 0.2em;
 	}
 </style>
