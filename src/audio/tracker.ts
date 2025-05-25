@@ -20,6 +20,7 @@ export type AudioTrackerContext = {
 
 // audio tracker
 export function createAudioTracker(analysis: Analysis) {
+	console.warn("created audio tracker for:", analysis)
 	const beat = new AudioMoment<DetectedBeat>()
 	const section = new AudioMoment<DetectedSection>()
 	const tatum = new AudioMoment<PositionEstimate>()

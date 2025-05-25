@@ -1,7 +1,8 @@
 {
 	"type": "module",
 	"scripts": {
-		"start": "swes dev"
+		"start": "swes dev",
+		"build": "swes build"
 	},
 	"devDependencies": {
 		"swes": "benjamingwynn/swes",

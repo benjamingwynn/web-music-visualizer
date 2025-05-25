@@ -81,7 +81,10 @@ export class MusicCanvas {
 		if (!v) throw new Error("not found")
 		this.currentVisualizationId.set(id)
 		this.currentVisualization = v
-		this.canvas.width = this.canvas.width // <- resets context
+		const box = this.canvas.getBoundingClientRect()
+		this.canvas.removeAttribute("style")
+		this.canvas.width = box.width // <- resets context
+		this.canvas.height = box.height
 		// todo: error handling
 		const drawFn = v.does(this.canvas)
 		this.currentVisualizationRender = drawFn
