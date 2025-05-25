@@ -1,6 +1,6 @@
 import {MusicCanvas} from "../audio/canvas.ts"
 
-MusicCanvas.registerVisualization("xxx", {
+MusicCanvas.registerVisualization("ps1", {
 	info: {
 		name: "PS1 Shape Emulator",
 		author: "benjamin",
@@ -203,7 +203,6 @@ MusicCanvas.registerVisualization("xxx", {
 			masterCtx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight)
 
 			// draw scanlines
-			console.log(scanHeight)
 			for (let y = 0; y < canvas.height; y++) {
 				if (y % 2 === 0) {
 					masterCtx.fillStyle = "rgba(0,0,0,0.1)"

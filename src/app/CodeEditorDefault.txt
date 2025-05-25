@@ -1,0 +1,29 @@
+// You must select the same "** Custom visual**" above to see this
+// If the visualization is selected then it will live-reload
+
+MusicCanvas.registerVisualization('myVisual', {
+    info: {
+        name: "** Custom visual **",
+        author: "Your name here",
+        description: "Write a description of the visualization here."
+    },
+    does: (canvas) => {
+        // do your world setup, canvas setup, etc here
+        const ctx = canvas.getContext('2d')
+
+        return (deltaTime, music) => {
+            // do your drawing/music reaction here
+            ctx.fillStyle = 'yellow'
+            ctx.fillRect(150, 300, 100, 100)
+
+            // deltaTime is the time between each frame in ms, usually ~16ms
+            // if the music argument is defined, music analysis for the current song has finished
+            // types for music are provided via intellisense, they should be mostly intuitive
+            // i.e. you can do like `if (music.changed.beat)`
+            // or `music.section.current.bpm.min` to get the minimum BPM of this section
+        }
+    }
+})
+
+// btw changes to this will persist into localstorage so you don't lose them on page refresh
+// glhf!

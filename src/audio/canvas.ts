@@ -2,7 +2,6 @@ import type {Analysis, DetectedBeat, DetectedSection, DetectedSegment, PositionE
 import {createAudioTracker, type AudioTracker, type AudioTrackerContext} from "./tracker.ts"
 export {type AudioTrackerContext}
 import {writable} from "svelte/store"
-import {makeAnalyser} from "musiq"
 export type {DetectedBeat, DetectedSection, DetectedSegment, PositionEstimate}
 //
 
@@ -22,7 +21,8 @@ type Visualization = {
 }
 
 export class MusicCanvas {
-	public currentVisualizationId = writable<string>()
+	public currentVisualizationId!: string
+	public currentVisualizationIdStore = writable<string>()
 	private currentVisualization?: Visualization
 	private currentVisualizationRender?: VisualizationRender
 	private audioTracker?: AudioTracker
@@ -33,17 +33,15 @@ export class MusicCanvas {
 	private canvas?: HTMLCanvasElement
 	private audio?: HTMLAudioElement
 
-	public constructor() {}
+	public error = writable<string | null>(null)
+
+	constructor() {
+		MusicCanvas.constructed.add(this)
+	}
 
 	public mount(canvas: HTMLCanvasElement, audio: HTMLAudioElement) {
 		this.canvas = canvas
 		this.audio = audio
-
-		// todo: when audio changes its source, destroy the existing audio tracker and any analysis in progress
-		// then create an analysis of the new source, and start an audio tracker
-		audio.onchange = () => {
-			console.log("audio changed")
-		}
 
 		// start first visualization
 		this.startVisualization([...MusicCanvas.registeredVisualizations.keys()][0])
@@ -65,7 +63,13 @@ export class MusicCanvas {
 
 		if (this.currentVisualizationRender) {
 			const music = this.audioTracker && this.audio ? this.audioTracker(this.audio.currentTime) : undefined
-			this.currentVisualizationRender(delta, music)
+			try {
+				this.currentVisualizationRender(delta, music)
+				this.error.set(null)
+			} catch (err) {
+				this.error.set("Cannot draw due to an error.")
+				console.error("[draw error]", err)
+			}
 		}
 
 		// queue new frame
@@ -79,23 +83,34 @@ export class MusicCanvas {
 		}
 		const v = MusicCanvas.registeredVisualizations.get(id)
 		if (!v) throw new Error("not found")
-		this.currentVisualizationId.set(id)
+		this.currentVisualizationId = id
+		this.currentVisualizationIdStore.set(id)
 		this.currentVisualization = v
 		const box = this.canvas.getBoundingClientRect()
 		this.canvas.removeAttribute("style")
 		this.canvas.width = box.width // <- resets context
 		this.canvas.height = box.height
-		// todo: error handling
-		const drawFn = v.does(this.canvas)
-		this.currentVisualizationRender = drawFn
+		try {
+			const drawFn = v.does(this.canvas)
+			this.currentVisualizationRender = drawFn
+			this.error.set(null)
+		} catch (err) {
+			console.error("[init error]", err)
+			this.error.set("Cannot initialize due to an error.")
+			return
+		}
 
 		if (this.nextFrame) cancelAnimationFrame(this.nextFrame)
 		this.nextFrame = requestAnimationFrame(this.onFrame)
+		this.error.set(null)
 	}
 
 	public dispose() {
 		if (this.nextFrame) cancelAnimationFrame(this.nextFrame)
+		MusicCanvas.constructed.delete(this)
 	}
+
+	private static constructed = new Set<MusicCanvas>()
 
 	public static registerVisualization(id: string, visualization: Visualization) {
 		MusicCanvas.registeredVisualizations.set(id, visualization)
@@ -103,6 +118,13 @@ export class MusicCanvas {
 			const rtn = [...MusicCanvas.registeredVisualizations.entries()]
 			return rtn
 		})
+
+		// restart the visualization if its re-registered
+		for (const canvas of MusicCanvas.constructed) {
+			if (canvas.currentVisualizationId === id) {
+				canvas.startVisualization(id)
+			}
+		}
 	}
 }
 

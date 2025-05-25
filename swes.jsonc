@@ -1,5 +1,6 @@
 {
 	"links": {
-		"/musiq": "./node_modules/musiq"
+		"/musiq": "./node_modules/musiq",
+		"/monaco": "./.monaco"
 	}
 }

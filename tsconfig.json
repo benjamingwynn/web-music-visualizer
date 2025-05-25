@@ -5,6 +5,7 @@
 		"module": "NodeNext",
 		"isolatedModules": true,
 		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
 		"skipDefaultLibCheck": true,

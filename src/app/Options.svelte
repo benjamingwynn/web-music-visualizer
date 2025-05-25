@@ -1,40 +1,66 @@
 <script lang="ts">
+	import CodeEditor from "./CodeEditor.svelte"
 	import {MusicCanvas} from "../audio/canvas"
+	import {onMount, getContext} from "svelte"
+	import type {Writable} from "svelte/store"
+
+	const editorFocused = getContext<Writable<boolean>>("editorFocused")
 
 	export let musicCanvas: MusicCanvas
+	let showList = false
 
-	const selectedId = musicCanvas.currentVisualizationId
+	const selectedId = musicCanvas.currentVisualizationIdStore
 	const all = MusicCanvas.registeredVisualizationsStore
+	$: active = $all.find(([id]) => id === $selectedId)?.[1]
 
-	const next = () => {
+	const shift = (delta: number) => {
 		const i = $all.findIndex(([x]) => x === $selectedId)
-		const n = $all[i + 1]
+		const n = $all[i + delta]
 		if (n) {
 			musicCanvas.startVisualization(n[0])
 		} else {
 			musicCanvas.startVisualization($all[0][0])
 		}
 	}
+	const next = () => shift(+1)
+	const prev = () => shift(-1)
 </script>
 
 <svelte:window
 	on:keydown={(ev) => {
+		if ($editorFocused) {
+			return
+		}
 		if (ev.key === "n") {
 			ev.preventDefault()
 			next()
+		}
+		if (ev.key === "p") {
+			ev.preventDefault()
+			prev()
 		}
 	}}
 />
 
 <h1>this is Options</h1>
-<h1>press N for next. selected={$selectedId}.</h1>
+<h1>press N for next, P for previous. selected={$selectedId}.</h1>
 
-<div>
+<button
+	type="button"
+	on:click={() => {
+		showList = !showList
+	}}
+>
+	<h2>{active?.info.name}</h2>
+</button>
+
+<div class="list" hidden={!showList}>
 	{#each $all as [id, vis]}
 		<button
 			type="button"
 			class:active={id === $selectedId}
 			on:click={() => {
+				showList = false
 				musicCanvas.startVisualization(id)
 			}}
 		>
@@ -45,10 +71,20 @@
 	{/each}
 </div>
 
+<div class="editor" hidden={showList}>
+	<CodeEditor></CodeEditor>
+</div>
+
 <style lang="less">
-	div {
+	.list {
 		display: flex;
 		flex-flow: column nowrap;
+		overflow-y: auto;
+		max-height: 600px;
+	}
+
+	.editor {
+		height: 100%;
 	}
 
 	button {
@@ -76,5 +112,9 @@
 
 	h3 {
 		margin-bottom: 0.2em;
+	}
+
+	*[hidden] {
+		display: none;
 	}
 </style>

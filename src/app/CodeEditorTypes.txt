@@ -1,0 +1,82 @@
+type PositionEstimate = {
+	confidence: number
+	start: number
+	index: number
+}
+type DetectedBeat = {
+	start: number
+	confidence: number
+	index: number
+	bpm: number
+	perceivedLoudness: number
+}
+type StatisticalRange = {
+	min: number
+	max: number
+	avg: number
+}
+type DetectedSection = {
+	start: number
+	confidence: number
+	/** fixed size of 24 items for each minor key, 0-1 confidence. */
+	keys: Float32Array
+	index: number
+	bpm: StatisticalRange
+	perceivedLoudness: StatisticalRange
+	segments: DetectedSegment[]
+}
+type DetectedSegment = {
+	start: number
+	rmsEnergy: number
+	deltaRms: number
+	lowEnergy: number
+	midEnergy: number
+	highEnergy: number
+	zeroCrossingRate: number
+	perceivedLoudness: number
+}
+type Analysis = {
+	sections: DetectedSection[]
+	tatums: PositionEstimate[]
+	beats: DetectedBeat[]
+	segments: DetectedSegment[]
+}
+
+class AudioMoment<T> {
+	current: T | undefined
+	next: T | undefined
+	prev: T | undefined
+}
+
+type AudioTrackerContext = {
+	changed: {
+		beat: boolean
+		section: boolean
+		tatum: boolean
+		segment: boolean
+	}
+	beat: AudioMoment<DetectedBeat>
+	section: AudioMoment<DetectedSection>
+	tatum: AudioMoment<PositionEstimate>
+	segment: AudioMoment<DetectedSegment>
+}
+
+type VisualizationRender = (deltaTime: number, music?: AudioTrackerContext) => void
+type VisualizationWork = (canvas: HTMLCanvasElement) => VisualizationRender
+
+type VisualizationInfo = {
+	author: string
+	name?: string
+	description?: string
+	gpu?: "webgpu"
+}
+
+type Visualization = {
+	does: VisualizationWork
+	info: VisualizationInfo
+}
+
+declare class MusicCanvas {
+	/** * working documentation */
+	static registerVisualization(id: string, visualization: Visualization): void
+}

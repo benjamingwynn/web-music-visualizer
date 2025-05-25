@@ -1,0 +1,3 @@
+- npm i
+- npm run build-monaco-workers
+- npm start (OR) npm run build

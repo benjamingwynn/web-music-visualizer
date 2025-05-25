@@ -2,13 +2,16 @@
 	"type": "module",
 	"scripts": {
 		"start": "swes dev",
+		"build-monaco-workers": "esbuild --bundle --target=es2017 --outdir=.monaco node_modules/monaco-editor/esm/vs/editor/editor.worker.js node_modules/monaco-editor/esm/vs/language/css/css.worker.js node_modules/monaco-editor/esm/vs/language/html/html.worker.js node_modules/monaco-editor/esm/vs/language/json/json.worker.js node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js",
 		"build": "swes build"
 	},
 	"devDependencies": {
-		"swes": "benjamingwynn/swes",
-		"musiq": "file:../musiq",
 		"@primer/octicons": "19",
+		"monaco-editor": "0.52",
+		"musiq": "file:../musiq",
 		"svelte": "4",
+		"swes": "benjamingwynn/swes",
+		"ts-blank-space": "^0.6.1",
 		"typescript": "5.8"
 	}
 }
