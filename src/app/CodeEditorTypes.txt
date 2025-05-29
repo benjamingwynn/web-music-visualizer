@@ -1,38 +1,61 @@
 type PositionEstimate = {
+	/** 0-1 float */
 	confidence: number
+	/** in seconds */
 	start: number
+	/** index in the array of this item */
 	index: number
 }
 type DetectedBeat = {
+	/** in seconds */
 	start: number
+	/** 0-1 float */
 	confidence: number
+	/** index in the array of this item */
 	index: number
+	/** 0-1 float */
 	bpm: number
+	/** 0-1 float */
 	perceivedLoudness: number
 }
 type StatisticalRange = {
+	/** 0-1 float */
 	min: number
+	/** 0-1 float */
 	max: number
+	/** 0-1 float */
 	avg: number
 }
 type DetectedSection = {
+	/** in seconds */
 	start: number
 	confidence: number
 	/** fixed size of 24 items for each minor key, 0-1 confidence. */
 	keys: Float32Array
+	/** index in the array of this item */
 	index: number
+	/** the approximate BPM of this section, we think */
 	bpm: StatisticalRange
+	/** the approximate loudness that is heard */
 	perceivedLoudness: StatisticalRange
 	segments: DetectedSegment[]
 }
 type DetectedSegment = {
+	/** seconds */
 	start: number
+	/**0-1 float */
 	rmsEnergy: number
+	/**0-1 float */
 	deltaRms: number
+	/** 0-1 float */
 	lowEnergy: number
+	/** 0-1 float */
 	midEnergy: number
+	/** 0-1 float */
 	highEnergy: number
+	/** 0-1 float */
 	zeroCrossingRate: number
+	/** the approximate loudness that is heard */
 	perceivedLoudness: number
 }
 type Analysis = {
@@ -49,26 +72,34 @@ class AudioMoment<T> {
 }
 
 type AudioTrackerContext = {
+	/** contains boolean flags for whether elements of the song changed  */
 	changed: {
 		beat: boolean
 		section: boolean
 		tatum: boolean
 		segment: boolean
 	}
+	/** hopefully matches beats in the music. we are /NOT/ using ML for this yet, so it isn't always accurate and can report more beats than there are, so you may want to account for this */
 	beat: AudioMoment<DetectedBeat>
+	/** A song is split up into approximately 6-24 sections of different keys and tempos */
 	section: AudioMoment<DetectedSection>
+	/** Tatums are super experimental and do not work very well yet. */
 	tatum: AudioMoment<PositionEstimate>
+	/** A song is split up into multiple segments per second. */
 	segment: AudioMoment<DetectedSegment>
 }
 
+/** This is called every frame to render your. deltaTime is the time between each frame. If music is undefined, the analysis is likely still running, or is turned off.  */
 type VisualizationRender = (deltaTime: number, music?: AudioTrackerContext) => void
+/** Callback to setup your visualization, such as setting up your context and/or your world. Note: you cannot set the height/width of the canvas directly here as it'll be overwritten on resize! */
 type VisualizationWork = (canvas: HTMLCanvasElement) => VisualizationRender
 
 type VisualizationInfo = {
 	author: string
 	name?: string
 	description?: string
-	gpu?: "webgpu"
+	/** define if you're using the GPU. if undefined, no special canvas setup is done., */
+	gpu?: "webgpu" | "webgl"
 }
 
 type Visualization = {
@@ -77,6 +108,6 @@ type Visualization = {
 }
 
 declare class MusicCanvas {
-	/** * working documentation */
+	/** Registers your visualization */
 	static registerVisualization(id: string, visualization: Visualization): void
 }
