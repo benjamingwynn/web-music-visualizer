@@ -817,9 +817,12 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		const canvas = document.createElement("canvas")
 		const ctx = canvas.getContext("webgpu")
 		if (!ctx) {
-			masterCtx.fillStyle = "red"
-			masterCtx.font = "36px monospace"
-			masterCtx.fillText("Sorry, your browser does not support WebGPU", 36, 36)
+			return () => {
+				masterCanvas.width = masterCanvas.width
+				masterCtx.fillStyle = "red"
+				masterCtx.font = "36px monospace"
+				masterCtx.fillText("Sorry, your browser does not support WebGPU.", 36, masterCanvas.height / 2)
+			}
 		}
 		// okay!
 		let render: (() => void) | null = null
