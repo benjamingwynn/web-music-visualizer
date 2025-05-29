@@ -5,8 +5,8 @@ import {writable} from "svelte/store"
 export type {DetectedBeat, DetectedSection, DetectedSegment, PositionEstimate}
 //
 
-type VisualizationRender = (deltaTime: number, music?: AudioTrackerContext) => void
-type VisualizationWork = (canvas: HTMLCanvasElement) => VisualizationRender
+type VisualizationRender = (deltaTime: number, music: undefined | AudioTrackerContext) => void
+type VisualizationWork = (canvas: HTMLCanvasElement, signal: AbortSignal) => VisualizationRender
 
 type VisualizationInfo = {
 	author: string
@@ -34,6 +34,7 @@ export class MusicCanvas {
 	private audio?: HTMLAudioElement
 
 	public error = writable<string | null>(null)
+	private currentAbort?: AbortController
 
 	constructor() {
 		MusicCanvas.constructed.add(this)
@@ -83,6 +84,9 @@ export class MusicCanvas {
 		}
 		const v = MusicCanvas.registeredVisualizations.get(id)
 		if (!v) throw new Error("not found")
+		if (this.currentAbort) {
+			this.currentAbort.abort(new Error("The visualization is changing"))
+		}
 		this.currentVisualizationId = id
 		this.currentVisualizationIdStore.set(id)
 		this.currentVisualization = v
@@ -91,7 +95,9 @@ export class MusicCanvas {
 		this.canvas.width = box.width // <- resets context
 		this.canvas.height = box.height
 		try {
-			const drawFn = v.does(this.canvas)
+			const abort = new AbortController()
+			const drawFn = v.does(this.canvas, abort.signal)
+			this.currentAbort = abort
 			this.currentVisualizationRender = drawFn
 			this.error.set(null)
 		} catch (err) {
