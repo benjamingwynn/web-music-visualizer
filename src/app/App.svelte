@@ -141,7 +141,7 @@
 		position: fixed;
 		top: 0;
 		right: 0;
-		width: 600px;
+		width: 900px;
 		overflow-y: auto;
 		bottom: 0;
 		background: rgba(0, 0, 255, 0.5);

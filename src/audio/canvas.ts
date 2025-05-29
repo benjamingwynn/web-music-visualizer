@@ -128,6 +128,8 @@ export class MusicCanvas {
 	}
 }
 
+window.MusicCanvas = MusicCanvas
+
 // register the debug visualization
 MusicCanvas.registerVisualization("debug", {
 	info: {

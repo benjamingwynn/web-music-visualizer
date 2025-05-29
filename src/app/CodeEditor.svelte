@@ -90,6 +90,9 @@
 			value: jsCode,
 			language: "typescript",
 			theme: "vs-dark",
+			minimap: {
+				enabled: false,
+			},
 		})
 		run()
 
