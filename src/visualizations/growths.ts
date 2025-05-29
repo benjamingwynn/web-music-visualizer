@@ -206,7 +206,7 @@ MusicCanvas.registerVisualization("growths", {
 					plants.add(
 						new Growth(
 							minX + Math.random() * (maxX - minX),
-							Math.max(1 - music.segment.current.rmsEnergy, 0.1) * 0.7 + Math.random() * 0.3,
+							Math.max(1 - music.segment.current.rmsEnergy, 0.3) * 0.7 + Math.random() * 0.3,
 							(music.beat.current.bpm / 60) * 1000,
 							pickedColor,
 							music.beat.current.perceivedLoudness,
