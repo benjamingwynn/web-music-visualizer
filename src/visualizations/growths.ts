@@ -1,17 +1,13 @@
-// You must select the same "** Custom visual**" above to see this
-// If the visualization is selected then it will live-reload
-
-import {MusicCanvas} from "../audio/canvas.ts"
-
 MusicCanvas.registerVisualization("growths", {
 	info: {
-		name: "Doodle Growths",
+		name: "Doodle Flowers",
 		author: "benjamin",
-		description: "Doodles of flowers grow with the music",
+		description: "Doodles of flowers grow with the music. Works well for slow music with synths.",
 	},
 	does: (canvas) => {
 		// do your world setup, canvas setup, etc here
-		const ctx = canvas.getContext("2d")
+		const ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+		if (!ctx) throw new Error("ruh oh")
 
 		const plants = new Set<Growth>()
 
@@ -88,10 +84,7 @@ MusicCanvas.registerVisualization("growths", {
 				const STEM_SIZE = canvas.height * height
 				this.stemParts = STEM_SIZE / STEM_PARTS
 				this.stemPath = Array.from({length: this.stemParts}).map((_, i) => {
-					return [
-						canvas.width * x + (i === this.stemParts - 1 ? 0 : STEM_NOISE * (Math.random() - 0.5)),
-						canvas.height - (i / this.stemParts) * STEM_SIZE,
-					]
+					return [canvas.width * x + STEM_NOISE * (Math.random() - 0.5), canvas.height - (i / this.stemParts) * STEM_SIZE]
 				})
 			}
 
@@ -176,13 +169,15 @@ MusicCanvas.registerVisualization("growths", {
 
 		return (deltaTime, music) => {
 			canvas.width = canvas.width
+			ctx.fillStyle = "black"
+			ctx.fillRect(0, 0, canvas.width, canvas.height)
 
 			for (const plant of plants) {
 				plant.draw()
 			}
 
 			if (!plants.size && !music) {
-				plants.add(new Growth(0.5, 0.5 * Math.random() + 0.3, 500 + Math.random() * 1500, "90deg 75% 50%", 0.5, 0.1, 0.5))
+				plants.add(new Growth(0.5, 0.5 * Math.random() + 0.3, 1500 + Math.random() * 500, "90deg 75% 50%", 0.5, Math.random(), 0.5))
 			}
 
 			if (music?.changed.beat && music.segment.current && music.section.current && music.beat.current?.perceivedLoudness) {
@@ -193,7 +188,7 @@ MusicCanvas.registerVisualization("growths", {
 				const candidates = []
 				for (let i = 0; i < music.section.current.keys.length; i++) {
 					const confidence = music.section.current.keys[i]
-					const addsCandidates = Math.floor(confidence * 30)
+					const addsCandidates = Math.floor(confidence * 25)
 					const hue = picks[i]
 					const a = Math.min(100, music.beat.current.perceivedLoudness * 100 + 25)
 					for (let _ = 0; _ < addsCandidates; _++) {
@@ -212,10 +207,10 @@ MusicCanvas.registerVisualization("growths", {
 						new Growth(
 							minX + Math.random() * (maxX - minX),
 							Math.max(1 - music.segment.current.rmsEnergy, 0.1) * 0.7 + Math.random() * 0.3,
-							(music.beat.current.bpm / 60) * 500,
+							(music.beat.current.bpm / 60) * 1000,
 							pickedColor,
 							music.beat.current.perceivedLoudness,
-							music.section.current.perceivedLoudness.max * 0.1,
+							music.segment.current.deltaRms * 0.15,
 							music.segment.current.perceivedLoudness
 						)
 					)
