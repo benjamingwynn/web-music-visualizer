@@ -230,7 +230,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 	info: {
 		name: "Dots and Lines",
 		author: "benjamin",
-		description: "WebGPU port of the spotifystarfield.com visualization",
+		description: "WORK IN PROGRESS -- WebGPU port of the spotifystarfield.com visualization",
 		gpu: "webgpu",
 	},
 	does: (masterCanvas, signal) => {

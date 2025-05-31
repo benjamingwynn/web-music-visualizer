@@ -1,6 +1,7 @@
 import("./ps1.ts")
 import("./growths.ts")
 import("./particleSymphony.ts")
+import("./needles.ts")
 // import("./circles.ts")
 // import("./pulseGrid.ts")
 import("./harmonic-strands.ts")
