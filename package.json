@@ -7,6 +7,7 @@
 		"build": "swes build"
 	},
 	"devDependencies": {
+		"@webgpu/types": "^0.1.54",
 		"@primer/octicons": "19",
 		"monaco-editor": "0.52",
 		"musiq": "file:../musiq",

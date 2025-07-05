@@ -14,7 +14,7 @@
 		"resolveJsonModule": true,
 		"noEmit": true,
 		"verbatimModuleSyntax": true,
-		"types": ["swes/types.d.ts"]
+		"types": ["swes/types.d.ts", "@webgpu/types"]
 	},
 	"include": ["src"],
 	"exclude": ["node_modules"]

@@ -63,7 +63,7 @@ export class MusicCanvas {
 		// .
 
 		if (this.currentVisualizationRender) {
-			const music = this.audioTracker && this.audio ? this.audioTracker(this.audio.currentTime) : undefined
+			const music = this.audioTracker && this.audio && !this.audio.paused ? this.audioTracker(this.audio.currentTime) : undefined
 			try {
 				this.currentVisualizationRender(delta, music)
 				this.error.set(null)
