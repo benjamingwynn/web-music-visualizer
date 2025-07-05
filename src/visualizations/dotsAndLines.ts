@@ -296,8 +296,13 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let debug1: string = "debug"
 
 		let debugAnimate = true
-		let debugSpeed = 0.00008
+		let WORLD_SPEED = 0.0001
 		let floatSpeed = 1
+
+		let useOutOfRangeRoots = false
+		let useOutOfRangeTargets = false
+		const outOfRangeTargets = new Set<number>()
+		const outOfRangeRoots = new Set<number>()
 
 		/** returns array of size n randomly containing 1-8 */
 		function randomDirections(n: number) {
@@ -349,6 +354,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				" cp out : " + msCopyOut + "ms",
 				"mem in  : " + ((roots.byteLength + targets.byteLength) / 1024).toFixed(2) + "k",
 				"options : " + options,
+				"respawn : " + useOutOfRangeRoots + "/" + outOfRangeRoots.size + "/" + useOutOfRangeTargets + "/" + outOfRangeTargets.size,
 				"",
 				debug0,
 				debug1,
@@ -703,125 +709,109 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			}
 		}
 
+		function deltasFromDirection(direction: number): [number, number] {
+			let deltaX: number = 0
+			let deltaY: number = 0
+
+			switch (direction) {
+				// top left
+				case 1: {
+					deltaX = -1
+					deltaY = -1
+					break
+				}
+				// top
+				case 2: {
+					deltaX = 0
+					deltaY = -1
+					break
+				}
+				// top right
+				case 3: {
+					deltaX = +1
+					deltaY = -1
+					break
+				}
+				// right
+				case 4: {
+					deltaX = 1
+					deltaY = 0
+					break
+				}
+				// bottom right
+				case 5: {
+					deltaX = +1
+					deltaY = +1
+					break
+				}
+				// bottom
+				case 6: {
+					deltaX = 0
+					deltaY = +1
+					break
+				}
+				// bottom left
+				case 7: {
+					deltaX = -1
+					deltaY = +1
+					break
+				}
+				// left
+				case 8: {
+					deltaX = -1
+					deltaY = 0
+					break
+				}
+				default: {
+					throw new Error("Unexpected direction")
+				}
+			}
+			return [deltaX, deltaY] as const
+		}
+
 		function physics(dT: number) {
-			if (debugAnimate) {
-				for (let i = 0; i < targets.length; i += 2) {
-					targets[i + 0] += -(debugSpeed * floatSpeed) * (i * 0.001)
-					targets[i + 1] += -(debugSpeed * floatSpeed) * (i * 0.001)
-
-					if (targets[i + 0] <= 0) targets[i + 0] = 1
-					if (targets[i + 1] <= 0) targets[i + 1] = 1
+			for (let i = 0; i < targets.length; i += 2) {
+				if (useOutOfRangeTargets && outOfRangeTargets.has(i)) {
+					continue
 				}
 
-				// with root directions
-				for (let i = 0; i < roots.length; i += 2) {
-					// roots[i + 0] += debugSpeed * (i * 0.001)
-					// roots[i + 1] += debugSpeed * (i * 0.001)
+				targets[i + 0] += -(WORLD_SPEED * floatSpeed) * (i * 0.001)
+				targets[i + 1] += -(WORLD_SPEED * floatSpeed) * (i * 0.001)
 
-					const vI = Math.floor(i / 2)
-					const direction = rootDirections[vI]
-					// if (rootVelocities[i] < 0.00001) rootVelocities[i] = 0
+				// offscreen fix (X)
+				if (targets[i + 0] < 0) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 0] = 1)
+				else if (targets[i + 0] > 1) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 0] = 0)
+				// offscreen fix (Y)
+				if (targets[i + 1] < 0) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 1] = 1)
+				else if (targets[i + 1] > 1) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 1] = 0)
+			}
 
-					let deltaX: number = 0
-					let deltaY: number = 0
+			// with root directions
+			for (let i = 0; i < roots.length; i += 2) {
+				if (useOutOfRangeRoots && outOfRangeRoots.has(i)) {
+					continue
+				}
+				const vI = Math.floor(i / 2)
+				const direction = rootDirections[vI]
 
-					switch (direction) {
-						// top left
-						case 1: {
-							deltaX = -1
-							deltaY = -1
-							break
-						}
-						// top
-						case 2: {
-							deltaX = 0
-							deltaY = -1
-							break
-						}
-						// top right
-						case 3: {
-							deltaX = +1
-							deltaY = -1
-							break
-						}
-						// right
-						case 4: {
-							deltaX = 1
-							deltaY = 0
-							break
-						}
-						// bottom right
-						case 5: {
-							deltaX = +1
-							deltaY = +1
-							break
-						}
-						// bottom
-						case 6: {
-							deltaX = 0
-							deltaY = +1
-							break
-						}
-						// bottom left
-						case 7: {
-							deltaX = -1
-							deltaY = +1
-							break
-						}
-						// left
-						case 8: {
-							deltaX = -1
-							deltaY = 0
-							break
-						}
-						default:
-							throw new Error("Unexpected direction")
-					}
+				const [deltaX, deltaY] = deltasFromDirection(direction)
 
-					roots[i + 0] += deltaX * (debugSpeed * floatSpeed)
-					roots[i + 1] += deltaY * (debugSpeed * floatSpeed)
+				roots[i + 0] += deltaX * (WORLD_SPEED * floatSpeed)
+				roots[i + 1] += deltaY * (WORLD_SPEED * floatSpeed)
 
-					if (rootVelocities[vI] > 0) {
-						const v = rootVelocities[vI]
-						rootVelocities[vI] = v * smoothness
-						roots[i + 0] += deltaX * v
-						roots[i + 1] += deltaY * v
-					}
-
-					// offscreen fix
-					if (roots[i] >= 1) {
-						roots[i] = 0
-					} else if (roots[i] <= 0) {
-						roots[i] = 1
-					}
-					// offscreen fix
-					if (roots[i + 1] >= 1) {
-						roots[i + 1] = 0
-					} else if (roots[i + 1] <= 0) {
-						roots[i + 1] = 1
-					}
+				if (rootVelocities[vI] > 0) {
+					const v = rootVelocities[vI]
+					rootVelocities[vI] = v * smoothness
+					roots[i + 0] += deltaX * v
+					roots[i + 1] += deltaY * v
 				}
 
-				// with roots
-				// for (let i = 0; i < roots.length; i += 1) {
-				// 	// if (rootVelocities[i] > 0) {
-				// 	// 	const direction = rootDirections[i]
-				// 	// 	const delta = rootVelocities[i]
-				// 	// 	rootVelocities[i] *= smoothness
-				// 	// 	if (rootVelocities[i] > 0) rootVelocities[i] = 0
-				// 	// 	roots[i] += delta
-				// 	// }
-
-				// }
-				// for (let i = 0; i < roots.length; i += 2) {
-				// 	// apply velocities
-				// 	const xD = Math.max(maxVelocityPerFrame, rootVelocities[i + 0])
-				// 	roots[i + 0] += xD
-				// 	rootVelocities[i + 0] -= xD
-				// 	rootVelocities[i + 1] -= roots[i + 1] += Math.max(maxVelocityPerFrame, rootVelocities[i + 1])
-
-				// 	// offscreen fix
-				// }
+				// offscreen fix (X)
+				if (roots[i + 0] < 0) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 0] = 1)
+				else if (roots[i + 0] > 1) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 0] = 0)
+				// offscreen fix (Y)
+				if (roots[i + 1] < 0) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 1] = 1)
+				else if (roots[i + 1] > 1) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 1] = 0)
 			}
 		}
 
@@ -855,13 +845,30 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				masterCtx.fillText("Loading, please wait", 36, 36)
 			} else {
 				// react to music here
+
+				useOutOfRangeTargets = Boolean(music?.section.current)
 				if (music) {
 					if (music.changed.beat && music.beat.current) {
 						onBeat(music.beat.current.perceivedLoudness)
 					}
 
 					if (music.section.current) {
-						floatSpeed = music.section.current.perceivedLoudness.avg
+						floatSpeed = 1 - music.section.current.perceivedLoudness.avg
+					}
+
+					if (music.changed.tatum) {
+						// move an out of range target onto a root when a tatum happens
+						const stuff = [...outOfRangeTargets.values()]
+						for (const index of stuff) {
+							// all of them?
+							const rootIndex = Math.floor(Math.random() * nRoots)
+							if (index !== undefined) {
+								targets[index + 0] = roots[rootIndex + 0]
+								targets[index + 1] = roots[rootIndex + 1]
+
+								outOfRangeTargets.delete(index)
+							}
+						}
 					}
 				}
 
