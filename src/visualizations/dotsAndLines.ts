@@ -165,7 +165,7 @@ fn main(
 			vec2(left, bottom),
 		);
 
-		let color = vec4f(1.0, 1.0, 1.0, 0.15);
+		let color = vec4f(1.0, 1.0, 1.0, 0.1);
 		let position = vec4f(positions[vertexIndex] * canvasScale, 0, 1.0);
 
 		return VertexOutput(position, color);
@@ -274,16 +274,15 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 	},
 	does: (masterCanvas, signal) => {
 		// test different sizes for debugging
-		const nRoots = 700
-		const nTargets = 900
+		const nRoots = 900
+		const nTargets = 700
 
 		const smoothness = 0.9
 
 		let roots = new Float32Array(randomPositions(nRoots))
 		let targets = new Float32Array(randomPositions(nTargets))
-		let colors = new Float32Array(randomColors(nTargets, "rainbow"))
-		window._colors = colors
-		const rootVelocities = new Float32Array(nRoots)
+		let colors = new Float32Array(makeColors(nTargets))
+		const targetVelocities = new Float32Array(nTargets)
 		/**
 		 * 1: north-west (top-left)
 		 * 2: north (top)
@@ -298,12 +297,13 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		const targetDirections = new Uint8Array(randomDirections(nTargets))
 
 		const onBeat = (strength: number) => {
-			for (let i = 0; i < rootVelocities.length; i++) {
-				rootVelocities[i] = strength * 0.0025
+			for (let i = 0; i < targetVelocities.length; i++) {
+				targetVelocities[i] = strength * 0.0025
 			}
 		}
 
-		const MAX_RADIUS = 0.1
+		const MAX_RADIUS = 0.07
+		const MIN_RADIUS = 0.01
 
 		const options = new Float32Array([
 			// wRatio
@@ -320,10 +320,10 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let radiusChangeSpeed = 0.00002
 		/** 0-1 */
 		function setRadius(radius: number) {
-			targetRadius = Math.max(0.1, Math.min(1, radius)) * MAX_RADIUS
+			targetRadius = Math.max(MIN_RADIUS, Math.min(1, radius) * MAX_RADIUS)
 		}
 
-		let enableDrawDebug = true
+		let enableDrawDebug = false
 		let msCompute: number = 0
 		let msDrawDebug: number = 0
 		let msDraw: number = 0
@@ -341,15 +341,14 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let floatSpeed = 0.5
 		let opacityIncreaseSpeed = 0.001
 
-		let useOutOfRangeRoots = false
 		let useOutOfRangeTargets = false
 		const outOfRangeTargets = new Set<number>()
-		const inRangeTargets = new Set<number>()
-		const outOfRangeRoots = new Set<number>()
 
 		// HACK: debugging
-		const onClick = () => {
-			enableDrawDebug = !enableDrawDebug
+		const onClick = (ev) => {
+			if (ev.shiftKey) {
+				enableDrawDebug = !enableDrawDebug
+			}
 		}
 		document.addEventListener("click", onClick)
 		signal.addEventListener("abort", () => {
@@ -364,8 +363,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		function randomPositions(n = 750) {
 			return Array.from({length: Math.floor(n * 2)}).map(() => Math.random())
 		}
-		function randomColors(n: number, colorScheme: "rainbow" | "blue") {
-			const threshold = 0.7
+		function makeColors(n: number) {
 			let rtn: number[] = []
 			for (let i = 0; i < n; i++) {
 				let r = 0.25
@@ -380,11 +378,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 				const a = 0
 
-				if (colorScheme == "blue") {
-					rtn = [...rtn, Math.min(0.4, r), Math.min(0.4, g), Math.max(0.5, b), a]
-				} else {
-					rtn = [...rtn, r, g, b, a]
-				}
+				rtn = [...rtn, r, g, b, a]
 			}
 			return rtn
 		}
@@ -408,7 +402,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				" cp out : " + msCopyOut + "ms",
 				"mem in  : " + ((roots.byteLength + targets.byteLength) / 1024).toFixed(2) + "k",
 				"options : " + options,
-				"respawn : " + useOutOfRangeTargets + "/" + inRangeTargets.size + "/" + outOfRangeTargets.size,
+				"respawn : " + useOutOfRangeTargets + "/" + outOfRangeTargets.size,
 				"",
 				debug0,
 				debug1,
@@ -834,16 +828,21 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				if (useOutOfRangeTargets && outOfRangeTargets.has(vI)) {
 					continue
 				}
-				inRangeTargets.add(vI)
 				const direction = targetDirections[vI]
 				const [deltaX, deltaY] = deltasFromDirection(direction)
 
 				targets[i + 0] += deltaX * (WORLD_SPEED * floatSpeed)
 				targets[i + 1] += deltaY * (WORLD_SPEED * floatSpeed)
 
+				if (targetVelocities[vI] > 0) {
+					const v = targetVelocities[vI]
+					targetVelocities[vI] = v * smoothness
+					targets[i + 0] += deltaX * v
+					targets[i + 1] += deltaY * v
+				}
+
 				const outOfRange = () => {
 					outOfRangeTargets.add(vI)
-					inRangeTargets.delete(vI)
 				}
 
 				// offscreen fix (X)
@@ -856,9 +855,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 			// with root directions
 			for (let i = 0; i < roots.length; i += 2) {
-				if (useOutOfRangeRoots && outOfRangeRoots.has(i)) {
-					continue
-				}
 				const vI = Math.floor(i / 2)
 				const direction = rootDirections[vI]
 
@@ -867,19 +863,12 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				roots[i + 0] += deltaX * (WORLD_SPEED * floatSpeed)
 				roots[i + 1] += deltaY * (WORLD_SPEED * floatSpeed)
 
-				if (rootVelocities[vI] > 0) {
-					const v = rootVelocities[vI]
-					rootVelocities[vI] = v * smoothness
-					roots[i + 0] += deltaX * v
-					roots[i + 1] += deltaY * v
-				}
-
 				// offscreen fix (X)
-				if (roots[i + 0] < 0) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 0] = 1)
-				else if (roots[i + 0] > 1) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 0] = 0)
+				if (roots[i + 0] < 0) roots[i + 0] = 1
+				else if (roots[i + 0] > 1) roots[i + 0] = 0
 				// offscreen fix (Y)
-				if (roots[i + 1] < 0) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 1] = 1)
-				else if (roots[i + 1] > 1) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 1] = 0)
+				if (roots[i + 1] < 0) roots[i + 1] = 1
+				else if (roots[i + 1] > 1) roots[i + 1] = 0
 			}
 
 			// increase alpha of colors
@@ -943,7 +932,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						lastBeatLoud = music.beat.current.perceivedLoudness
 					}
 
-					if (music.changed.section && music.section.current && music.segment.current) {
+					if (music.section.current && music.segment.current && (music.changed.section || !possibleNewColors.length)) {
 						floatSpeed = 1 - music.section.current.perceivedLoudness.avg
 						const candidates: [number, number, number, number][] = []
 						for (let i = 0; i < music.section.current.keys.length; i++) {
@@ -951,7 +940,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 							const complexity = 60
 							const addsCandidates = Math.floor(confidence * complexity)
 							const variance = 0.5
-							const hue = ((i + 6) % 24) / 24
+							const hue = ((i + 12) % 24) / 24
 							for (let _ = 0; _ < addsCandidates; _++) {
 								const [r, g, b] = hueSaturationToRGB(hue, 1 - variance + variance * Math.random())
 								const alpha = 0
@@ -963,19 +952,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						if (candidates.length) possibleNewColors = candidates
 					}
 
-					if (music.changed.tatum) {
+					if (music.changed.tatum || music.changed.section) {
 						// move an out of range target onto a root when a tatum happens
 						const targetsToMove = [...outOfRangeTargets.values()]
-						const spawnPoints = [...inRangeTargets.values()]
 						for (const moveTargetIndex of targetsToMove) {
 							// all of them?
 							if (moveTargetIndex !== undefined) {
-								const respawnXyIndex = spawnPoints[Math.floor(Math.random() * spawnPoints.length)] // find an in range target
-
 								const moveXyIndex = moveTargetIndex * 2
 
-								targets[moveXyIndex + 0] = targets[respawnXyIndex + 0]
-								targets[moveXyIndex + 1] = targets[respawnXyIndex + 1]
+								const respawnXyIndex = Math.floor((roots.length / 2) * Math.random())
+								targets[moveXyIndex + 0] = roots[respawnXyIndex + 0]
+								targets[moveXyIndex + 1] = roots[respawnXyIndex + 1]
 
 								// setup new color based on possible colors
 								if (possibleNewColors.length) {
@@ -988,7 +975,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 								}
 
 								outOfRangeTargets.delete(moveTargetIndex)
-								inRangeTargets.add(moveTargetIndex)
 							}
 						}
 					}
@@ -997,7 +983,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						setRadius(music.segment.current.perceivedLoudness * 2)
 					}
 				} else {
-					setRadius(1)
+					setRadius(0.5)
 				}
 
 				render()

@@ -94,6 +94,18 @@
 			return
 		}
 
+		if (ev.key === "j") {
+			ev.preventDefault()
+			prevSong()
+			return
+		}
+
+		if (ev.key === "l") {
+			ev.preventDefault()
+			nextSong()
+			return
+		}
+
 		if (ev.key === "k" || ev.key === "Space") {
 			ev.preventDefault()
 			if (audio.paused) {
