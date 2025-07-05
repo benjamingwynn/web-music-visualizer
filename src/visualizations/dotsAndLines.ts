@@ -2,12 +2,38 @@
 
 import {MusicCanvas} from "../audio/canvas.ts"
 
+function hueBrightnessToRGB(hue: number, brightness: number) {
+	// wrap hue into [0,1)
+	hue = ((hue % 1) + 1) % 1
+
+	// scale hue up to [0,6)
+	const h6 = hue * 6
+
+	// for each channel, offset h6 by [0,4,2], wrap mod 6, shift by −3, abs(), sub 1, then clamp to [0,1]
+	const channel = (offset: number) => {
+		let x = (((h6 + offset) % 6) + 6) % 6 // positive mod 6
+		x = Math.abs(x - 3) - 1
+		// clamp x to [0,1]
+		return x < 0 ? 0 : x > 1 ? 1 : x
+	}
+
+	// compute R,G,B and multiply each by brightness
+	const r = channel(0) * brightness
+	const g = channel(4) * brightness
+	const b = channel(2) * brightness
+
+	return [r, g, b]
+}
+
 const vertWGSL = `
 struct Line {
 	x1: f32,
 	y1: f32,
 	x2: f32,
 	y2: f32,
+	r: f32,
+	g: f32,
+	b: f32,
 	a: f32,
 };
 
@@ -27,7 +53,6 @@ struct Options {
 @group(0) @binding(2) var<storage, read> targets: array<vec2<f32>>;
 @group(0) @binding(3) var<storage, read> options: Options;
 @group(0) @binding(4) var<storage, read> lines: array<Line>;
-@group(0) @binding(5) var<storage, read> colors: array<vec4<f32>>;
 
 fn calculate_line_with_width(x1: f32, y1: f32, x2: f32, y2: f32, width: f32, wRatio: f32) -> array<vec2<f32>, 6> {
 	// Compute the direction vector (dx, dy)
@@ -79,12 +104,6 @@ fn main(
 	let shapeScale = options.scale;
 	let canvasScale = 1 + (options.radius * 2);
 	// let canvasScale = 0.8;
-
-	let colorIndex = rootIndex % arrayLength(&colors);
-	let colorFromIndex = colors[colorIndex];
-	let r = colorFromIndex.r;
-	let g = colorFromIndex.g;
-	let b = colorFromIndex.b;
 
 	if (rootIndex < rootLength) {
 		// draw a root:
@@ -152,7 +171,7 @@ fn main(
 
 		let positions = calculate_line_with_width(x1,y1,x2,y2, shapeScale * lineSize, options.wRatio);
 
-		let color = vec4f(r, g, b, min(0.95, line.a));
+		let color = vec4f(line.r, line.g, line.b, min(0.99, line.a));
 		let position = vec4f(positions[vertexIndex] * canvasScale, 0, 1.0);
 
 		return VertexOutput(position, color);
@@ -177,6 +196,9 @@ struct Line {
 	y1: f32,
 	x2: f32,
 	y2: f32,
+	r: f32,
+	g: f32,
+	b: f32,
 	a: f32,
 };
 
@@ -190,6 +212,7 @@ struct Options {
 @group(0) @binding(1) var<storage, read_write> roots: array<vec2<f32>>;
 @group(0) @binding(2) var<storage, read_write> targets: array<vec2<f32>>;
 @group(0) @binding(3) var<storage, read> options: Options;
+@group(0) @binding(4) var<storage, read> colors: array<vec4<f32>>;
 
 @compute @workgroup_size(128) fn computeSomething(
 @builtin(global_invocation_id) id: vec3u
@@ -215,14 +238,19 @@ struct Options {
 	let maxD = options.radius;
 
 	if (distance > maxD) {
-		rtn[rtnIndex] = Line(0, 0, 0, 0, 0);
+		rtn[rtnIndex] = Line(0, 0, 0, 0, 0, 0, 0, 0);
 		return;
 	}
 
 	let normalizedDistance = 1 - (distance / maxD);
-	// let normalizedDistance = 1 - min(distance / maxD, 1.0);
 
-	rtn[rtnIndex] = Line(rootX, rootY, targetX, targetY, normalizedDistance);
+	let color = colors[targetIndex];
+	let r = color.r;
+	let g = color.g;
+	let b = color.b;
+	let a = min(color.a, normalizedDistance);
+
+	rtn[rtnIndex] = Line(rootX, rootY, targetX, targetY, r, g, b, a);
 }
 `
 
@@ -237,13 +265,13 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		// test different sizes for debugging
 		const nRoots = 700
 		const nTargets = 900
-		const nColors = 700
 
 		const smoothness = 0.9
 
 		let roots = new Float32Array(randomPositions(nRoots))
 		let targets = new Float32Array(randomPositions(nTargets))
-		let colors = new Float32Array(randomColors(nColors, "rainbow"))
+		let colors = new Float32Array(randomColors(nTargets, "rainbow"))
+		window._colors = colors
 		const rootVelocities = new Float32Array(nRoots)
 		/**
 		 * 1: north-west (top-left)
@@ -264,17 +292,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			}
 		}
 
-		// HACK: debugging
-		// const onClick = () => {
-		// 	console.log("click")
-		// 	onBeat(Math.random())
-		// }
-		// document.addEventListener("click", onClick)
-		// signal.addEventListener("abort", () => {
-		// 	document.removeEventListener("click", onClick)
-		// })
-		// < end debug hack
-
 		const options = new Float32Array([
 			// wRatio
 			1,
@@ -284,27 +301,41 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			0.057,
 		])
 
+		let enableDrawDebug = true
 		let msCompute: number = 0
 		let msDrawDebug: number = 0
 		let msDraw: number = 0
 		let msCopyIn: number = 0
 		let msCopyOut: number = 0
 		let msFrameTotal: number = 0
+		let msPhysics: number = 0
 		// let nVertices: number = 0
 		// let nLineVertices: number = 0
 		// let nShapes: number = 0
 		let debug0: string = "debug"
 		let debug1: string = "debug"
 
-		let debugAnimate = true
-		let WORLD_SPEED = 0.0001
-		let floatSpeed = 1
+		let WORLD_SPEED = 0.0002
+		let floatSpeed = 0.5
+		let opacityIncreaseSpeed = 0.001
 
 		let useOutOfRangeRoots = false
 		let useOutOfRangeTargets = false
 		const outOfRangeTargets = new Set<number>()
 		const inRangeTargets = new Set<number>()
 		const outOfRangeRoots = new Set<number>()
+
+		// HACK: debugging
+		const onClick = () => {
+			console.log("click")
+			onBeat(Math.random())
+			enableDrawDebug = !enableDrawDebug
+		}
+		document.addEventListener("click", onClick)
+		signal.addEventListener("abort", () => {
+			document.removeEventListener("click", onClick)
+		})
+		// < end debug hack
 
 		/** returns array of size n randomly containing 1-8 */
 		function randomDirections(n: number) {
@@ -313,7 +344,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		function randomPositions(n = 750) {
 			return Array.from({length: Math.floor(n * 2)}).map(() => Math.random())
 		}
-		function randomColors(n = 500, colorScheme: "rainbow" | "blue") {
+		function randomColors(n: number, colorScheme: "rainbow" | "blue") {
 			const threshold = 0.7
 			let rtn: number[] = []
 			for (let i = 0; i < n; i++) {
@@ -346,12 +377,13 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				"debug",
 				"lengths : " + roots.length / 2 + " roots, " + targets.length / 2 + " targets",
 				"debug   : " + msDrawDebug + "ms",
+				"compute : " + msCompute + "ms",
 				"draw    : " + msDraw + "ms",
-				"total   : " + msFrameTotal + "ms",
+				"render  : " + msFrameTotal + "ms",
+				"physics : " + msPhysics + "ms",
 				// "        : " + nLineVertices + " line vertices",
 				// "        : " + nShapes + " shapes",
 				// "        : " + nVertices + " vertices total",
-				"compute : " + msCompute + "ms",
 				"  cp in : " + msCopyIn + "ms",
 				" cp out : " + msCopyOut + "ms",
 				"mem in  : " + ((roots.byteLength + targets.byteLength) / 1024).toFixed(2) + "k",
@@ -456,22 +488,32 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				label: "computeBindGroupLayout",
 				entries: [
 					{
+						// rtn
 						binding: 0,
 						visibility: GPUShaderStage.COMPUTE,
 						buffer: {type: "storage"},
 					},
 					{
+						//roots
 						binding: 1,
 						visibility: GPUShaderStage.COMPUTE,
 						buffer: {type: "storage"},
 					},
 					{
+						//targets
 						binding: 2,
 						visibility: GPUShaderStage.COMPUTE,
 						buffer: {type: "storage"},
 					},
 					{
+						//options
 						binding: 3,
+						visibility: GPUShaderStage.COMPUTE,
+						buffer: {type: "read-only-storage"},
+					},
+					{
+						//colors
+						binding: 4,
 						visibility: GPUShaderStage.COMPUTE,
 						buffer: {type: "read-only-storage"},
 					},
@@ -508,11 +550,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 					},
 					{
 						binding: 4,
-						visibility: GPUShaderStage.VERTEX,
-						buffer: {type: "read-only-storage"},
-					},
-					{
-						binding: 5,
 						visibility: GPUShaderStage.VERTEX,
 						buffer: {type: "read-only-storage"},
 					},
@@ -626,6 +663,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				device.queue.writeBuffer(rootsBuffer, 0, roots)
 				device.queue.writeBuffer(targetsBuffer, 0, targets)
 				device.queue.writeBuffer(optionsBuffer, 0, options)
+				device.queue.writeBuffer(colorsBuffer, 0, colors)
 
 				msCopyIn = Date.now() - tCopyStart
 
@@ -639,6 +677,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						{binding: 1, resource: {buffer: rootsBuffer}},
 						{binding: 2, resource: {buffer: targetsBuffer}},
 						{binding: 3, resource: {buffer: optionsBuffer}},
+						{binding: 4, resource: {buffer: colorsBuffer}},
 					],
 				})
 
@@ -673,7 +712,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						{binding: 2, resource: {buffer: targetsBuffer}},
 						{binding: 3, resource: {buffer: optionsBuffer}},
 						{binding: 4, resource: {buffer: computeResultBuffer}},
-						{binding: 5, resource: {buffer: colorsBuffer}},
 					],
 				})
 
@@ -698,7 +736,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				passEncoderRender.setVertexBuffer(2, targetsBuffer)
 				passEncoderRender.setVertexBuffer(3, optionsBuffer)
 				passEncoderRender.setVertexBuffer(4, computeResultBuffer)
-				passEncoderRender.setVertexBuffer(5, colorsBuffer)
 
 				passEncoderRender.draw(drawPassCount) // draw all the vertices
 
@@ -773,21 +810,20 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 		function physics(dT: number) {
 			for (let i = 0; i < targets.length; i += 2) {
-				if (useOutOfRangeTargets && outOfRangeTargets.has(i)) {
+				const vI = Math.floor(i / 2)
+				if (useOutOfRangeTargets && outOfRangeTargets.has(vI)) {
 					continue
 				}
-				inRangeTargets.add(i)
-
-				const vI = Math.floor(i / 2)
+				inRangeTargets.add(vI)
 				const direction = targetDirections[vI]
 				const [deltaX, deltaY] = deltasFromDirection(direction)
 
-				targets[i + 0] += deltaX * (WORLD_SPEED * floatSpeed) * (i * 0.001)
-				targets[i + 1] += deltaY * (WORLD_SPEED * floatSpeed) * (i * 0.001)
+				targets[i + 0] += deltaX * (WORLD_SPEED * floatSpeed)
+				targets[i + 1] += deltaY * (WORLD_SPEED * floatSpeed)
 
 				const outOfRange = () => {
-					outOfRangeTargets.add(i)
-					inRangeTargets.delete(i)
+					outOfRangeTargets.add(vI)
+					inRangeTargets.delete(vI)
 				}
 
 				// offscreen fix (X)
@@ -825,6 +861,14 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				if (roots[i + 1] < 0) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 1] = 1)
 				else if (roots[i + 1] > 1) useOutOfRangeRoots ? outOfRangeRoots.add(i) : (roots[i + 1] = 0)
 			}
+
+			// increase alpha of colors
+			for (let i = 0; i < nTargets; i++) {
+				const aI = i * 4 - 1
+				if (colors[aI] < 1) colors[aI] += opacityIncreaseSpeed * dT
+				if (colors[aI] > 1) colors[aI] = 1
+				// console.log(colors[aI])
+			}
 		}
 
 		const masterCtx = masterCanvas.getContext("2d")
@@ -844,13 +888,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		gpu(ctx, signal).then((r) => {
 			render = r
 		})
+		let possibleNewColors: [number, number, number, number][] = []
+		let lastBeatLoud: number
 		return (dT, music) => {
 			canvas.height = masterCanvas.height
 			canvas.width = masterCanvas.width
 			masterCtx.fillStyle = "black"
 			masterCtx.fillRect(0, 0, masterCanvas.width, masterCanvas.height)
 			resize(ctx)
+			const msPhysicsStart = performance.now()
 			physics(dT)
+			msPhysics = performance.now() - msPhysicsStart
 			if (!render) {
 				masterCtx.fillStyle = "green"
 				masterCtx.font = "36px monospace"
@@ -862,26 +910,54 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				if (music) {
 					if (music.changed.beat && music.beat.current) {
 						onBeat(music.beat.current.perceivedLoudness)
+						lastBeatLoud = music.beat.current.perceivedLoudness
 					}
 
-					if (music.section.current) {
+					if (music.changed.section && music.section.current) {
 						floatSpeed = 1 - music.section.current.perceivedLoudness.avg
+						const candidates: [number, number, number, number][] = []
+						for (let i = 0; i < music.section.current.keys.length; i++) {
+							const confidence = music.section.current.keys[i]
+							const addsCandidates = Math.floor(confidence * 20)
+							const hue = i / 24
+							const bright = Math.max((lastBeatLoud ?? 0.25) * 4)
+							for (let _ = 0; _ < addsCandidates; _++) {
+								const [r, g, b] = hueBrightnessToRGB(hue, bright)
+								const alpha = 0
+								const candidate: [number, number, number, number] = [r, g, b, alpha]
+								console.log("ADD candidate:", candidate)
+								candidates.push(candidate)
+							}
+						}
+						if (candidates.length) possibleNewColors = candidates
 					}
 
 					if (music.changed.tatum) {
 						// move an out of range target onto a root when a tatum happens
-						const stuff = [...outOfRangeTargets.values()]
+						const targetsToMove = [...outOfRangeTargets.values()]
 						const spawnPoints = [...inRangeTargets.values()]
-						for (const respawnIndex of stuff) {
+						for (const moveTargetIndex of targetsToMove) {
 							// all of them?
-							if (respawnIndex !== undefined) {
-								const targetIndex = spawnPoints[Math.floor(Math.random() * spawnPoints.length)] // find an in range target
+							if (moveTargetIndex !== undefined) {
+								const respawnXyIndex = spawnPoints[Math.floor(Math.random() * spawnPoints.length)] // find an in range target
 
-								targets[respawnIndex + 0] = targets[targetIndex + 0]
-								targets[respawnIndex + 1] = targets[targetIndex + 1]
+								const moveXyIndex = moveTargetIndex * 2
 
-								outOfRangeTargets.delete(respawnIndex)
-								inRangeTargets.add(respawnIndex)
+								targets[moveXyIndex + 0] = targets[respawnXyIndex + 0]
+								targets[moveXyIndex + 1] = targets[respawnXyIndex + 1]
+
+								// setup new color based on possible colors
+								if (possibleNewColors.length) {
+									const [r, g, b, a] = possibleNewColors[Math.floor(possibleNewColors.length * Math.random())]
+									const colorIndex = moveTargetIndex * 4
+									colors[colorIndex + 0] = r
+									colors[colorIndex + 1] = g
+									colors[colorIndex + 2] = b
+									colors[colorIndex + 3] = a
+								}
+
+								outOfRangeTargets.delete(moveTargetIndex)
+								inRangeTargets.add(moveTargetIndex)
 							}
 						}
 					}
@@ -890,7 +966,9 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				render()
 			}
 			masterCtx.drawImage(canvas, 0, 0)
-			draw2d(masterCtx)
+			if (enableDrawDebug) {
+				draw2d(masterCtx)
+			}
 		}
 	},
 })
