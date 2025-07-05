@@ -2,9 +2,9 @@ import {MusicCanvas} from "../audio/canvas.ts"
 
 MusicCanvas.registerVisualization("ps1", {
 	info: {
-		name: "PS1 Shape Emulator",
+		name: "80s Shape Emulator",
 		author: "benjamin",
-		description: "draws various shapes in sync with the music at PS1 resolution",
+		description: "draws neon shapes in sync with the music at a low resolution",
 	},
 	does: (masterCanvas) => {
 		const masterCtx = masterCanvas.getContext("2d")
@@ -43,7 +43,7 @@ MusicCanvas.registerVisualization("ps1", {
 			constructor(
 				private timeOffset: number = 0,
 				private spinSpeed: number = 0.001,
-				private growSpeed = 0.3,
+				private growSpeed = 1,
 				private shape: number = 6,
 				private color = "white",
 				private alt = false
@@ -57,9 +57,9 @@ MusicCanvas.registerVisualization("ps1", {
 				// increase size of thing
 				if (this.grow) {
 					if (this.alt) {
-						this.size += (Math.pow(dt, this.growSpeed) * Math.E) / 2
+						this.size += (this.growSpeed * 0.1 * dt * Math.E) / 2
 					} else {
-						this.size += Math.pow(dt, this.growSpeed)
+						this.size += this.growSpeed * 0.1 * dt
 					}
 					// when size gets too big to display, destroy myself
 					if (this.size > 500) {
@@ -126,7 +126,7 @@ MusicCanvas.registerVisualization("ps1", {
 						new Thing(
 							offset,
 							music.section.current.perceivedLoudness.avg * 0.001,
-							music?.section.current?.bpm.avg * 0.0001,
+							music?.section.current?.bpm.avg * 0.005,
 							(music.section.current.index % 5) + 3,
 							pickedColor,
 							music.section.current.perceivedLoudness.min > 0.2

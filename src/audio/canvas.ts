@@ -152,25 +152,38 @@ MusicCanvas.registerVisualization("debug", {
 		return (dT, music) => {
 			// draw stuff here
 			ctx.clearRect(0, 0, canvas.width, canvas.height)
-			ctx.fillStyle = "red"
-			ctx.font = "16px monospace"
+			ctx.fillStyle = "seagreen"
 
-			let y = 16
-			const lines = ["hello world", "this is the debug visualization", "dt=" + dT]
+			const cX = canvas.width / 2
+			const cY = canvas.height / 2
 
-			// react to music like this
-			// music can be undefined if the music analysis is still loading or failed for some reason
-			if (music) {
-				lines.push("we have music")
-				lines.push("current confidence:" + music.beat.current?.confidence)
-				lines.push("current section:" + JSON.stringify(music.section.current))
-				if (music.changed.beat && music.beat.current) {
-					lines.push(`beat ${music.beat.current.index}`)
-				}
+			{
+				const s = Math.floor(canvas.width * 0.1)
+				ctx.font = s + "px monospace"
+				// todo: pull from project package json
+				const t = "v2507"
+				const w = ctx.measureText(t)
+				ctx.fillText(t, cX - w.width / 2, cY + w.fontBoundingBoxDescent)
 			}
 
-			for (const line of lines) {
-				ctx.fillText(line, canvas.width / 2, (y += 16))
+			if (!music) {
+				ctx.fillStyle = "orange"
+				const s = Math.floor(canvas.width * 0.02)
+				ctx.font = s + "px monospace"
+				const t = "add music here"
+				const x = canvas.width / 3
+				const w = ctx.measureText(t)
+				ctx.fillText(t, x - w.width, canvas.height - w.fontBoundingBoxDescent * 16)
+			}
+
+			{
+				ctx.fillStyle = music ? "orange" : "seagreen"
+				const s = Math.floor(canvas.width * 0.02)
+				ctx.font = s + "px monospace"
+				const t = "pick visual here"
+				const x = (canvas.width / 6) * 5
+				const w = ctx.measureText(t)
+				ctx.fillText(t, x - w.width, canvas.height - w.fontBoundingBoxDescent * 16)
 			}
 		}
 	},

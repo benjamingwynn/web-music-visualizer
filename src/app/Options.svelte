@@ -24,6 +24,8 @@
 	}
 	const next = () => shift(+1)
 	const prev = () => shift(-1)
+
+	let showCode = false
 </script>
 
 <svelte:window
@@ -42,38 +44,47 @@
 	}}
 />
 
-<h1>this is Options</h1>
-<h1>press N for next, P for previous. selected={$selectedId}.</h1>
+<div class="float">
+	<!-- <h1>this is Options</h1>
+	<h1>press N for next, P for previous. selected={$selectedId}.</h1> -->
 
-<button
-	type="button"
-	on:click={() => {
-		showList = !showList
-	}}
->
-	<h2>{active?.info.name}</h2>
-</button>
+	<div class="list" hidden={!showList}>
+		{#each $all as [id, vis]}
+			<button
+				type="button"
+				class:active={id === $selectedId}
+				on:click={() => {
+					showList = false
+					musicCanvas.startVisualization(id)
+				}}
+			>
+				<h2>{vis.info.name}</h2>
+				<h3>{vis.info.author}</h3>
+				<h4>{vis.info.description}</h4>
+			</button>
+		{/each}
+	</div>
 
-<div class="list" hidden={!showList}>
-	{#each $all as [id, vis]}
-		<button
-			type="button"
-			class:active={id === $selectedId}
-			on:click={() => {
-				showList = false
-				musicCanvas.startVisualization(id)
-			}}
-		>
-			<h2>{vis.info.name}</h2>
-			<h3>{vis.info.author}</h3>
-			<h4>{vis.info.description}</h4>
-		</button>
-	{/each}
+	<button
+		type="button"
+		on:click={() => {
+			showList = !showList
+		}}
+	>
+		<h2>{active?.info.name}</h2>
+	</button>
+
+	<h4>{active?.info.description}</h4>
+	<h3>{active?.info.author}</h3>
+
+	<button type="button" on:click={() => (showCode = !showCode)}>show code</button>
 </div>
 
-<div class="editor" hidden={showList}>
-	<CodeEditor></CodeEditor>
-</div>
+{#if showCode}
+	<div class="editor" hidden={showList}>
+		<CodeEditor></CodeEditor>
+	</div>
+{/if}
 
 <style lang="less">
 	.list {
@@ -84,7 +95,23 @@
 	}
 
 	.editor {
-		height: 100%;
+		position: fixed;
+		top: 30%;
+		left: 30%;
+		height: 800px;
+		width: 800px;
+		box-shadow: 0 0 1em black;
+	}
+
+	.float {
+		position: fixed;
+		right: 0;
+		width: 400px;
+		overflow-y: auto;
+		bottom: 0;
+		background: rgba(0, 0, 255, 0.5);
+		margin-right: 1em;
+		color: white;
 	}
 
 	button {
@@ -103,6 +130,10 @@
 		margin: 0;
 		font-weight: normal;
 		text-align: left;
+	}
+
+	h3 {
+		font-style: italic;
 	}
 
 	h2 {

@@ -17,18 +17,21 @@
 	let mouseLastMoved: number = performance.now()
 	let hideUi = false
 	let nextFrame: number
-	let blockHide = false
+	let shouldHide = false
 	const HIDE_UI_AFTER = 2000
 	const musicCanvas = new MusicCanvas()
 	const musicCanvasError = musicCanvas.error
 	$: document.body.style.cursor = hideUi ? "none" : "default"
 	const frame = () => {
-		hideUi = !blockHide && performance.now() > mouseLastMoved + HIDE_UI_AFTER && !$editorFocused
+		hideUi = shouldHide && performance.now() > mouseLastMoved + HIDE_UI_AFTER && !$editorFocused
+		// console.log("hide ui:", shouldHide, mouseLastMoved, $editorFocused)
 
 		nextFrame = requestAnimationFrame(frame)
 	}
 
 	let nextSong: () => void
+	let prevSong: () => void
+	let openFilePicker: () => void
 	onMount(() => {
 		canvas.height = window.innerHeight * renderScale
 		canvas.width = window.innerWidth * renderScale
@@ -49,13 +52,20 @@
 		audio.play()
 	}
 
+	function onAddToQueue() {
+		requestAnimationFrame(() => {
+			main.scrollTo({behavior: "smooth", top: main.scrollHeight})
+		})
+	}
+
 	async function onAnalysis(analysis: Analysis) {
 		await musicCanvas.withAnalysis(analysis)
 	}
 
 	function onMouse(ev) {
 		mouseLastMoved = performance.now()
-		blockHide = ev.target !== canvas && ev.target !== main
+		// console.log(ev.target)
+		shouldHide = ev.target === document.body
 	}
 
 	function fullscreen() {
@@ -75,6 +85,12 @@
 		if (ev.key === "f") {
 			ev.preventDefault()
 			fullscreen()
+			return
+		}
+
+		if (ev.key === "o") {
+			ev.preventDefault()
+			openFilePicker()
 			return
 		}
 
@@ -99,22 +115,30 @@
 
 <main class:hidden={hideUi} bind:this={main}>
 	<div class="player">
-		<p>this is the player. todo move the prev/next buttons here</p>
-		<button type="button" on:click={fullscreen}>enter/exit fullscreen (F key)</button>
 		<audio bind:this={audio} controls on:ended={() => nextSong()}></audio>
+		<button type="button" on:click={prevSong}>PREV</button>
+		<button type="button" on:click={nextSong}>NEXT</button>
+		<button type="button" on:click={fullscreen}>enter/exit fullscreen (F key)</button>
 	</div>
 
-	<h1>demo</h1>
-	<p>editor is focused? {$editorFocused}</p>
+	<!-- <p>editor is focused? {$editorFocused}</p> -->
 
-	<Queue {musicCanvas} {onSelect} {onAnalysis} bind:next={nextSong} />
+	<Queue {musicCanvas} {onSelect} {onAnalysis} {onAddToQueue} bind:next={nextSong} bind:previous={prevSong} bind:openFilePicker />
 
-	<aside>
-		<Options {musicCanvas} />
-	</aside>
+	<Options {musicCanvas} />
 </main>
 
 <style>
+	:global(html, body) {
+		height: 100%;
+	}
+
+	:global(body) {
+		display: flex;
+		flex-flow: column nowrap;
+		justify-content: end;
+	}
+
 	.error {
 		position: fixed;
 		background-color: pink;
@@ -126,6 +150,8 @@
 	main {
 		padding-bottom: 10em;
 		transition: opacity 0.3s;
+		overflow-y: auto;
+		max-width: 300px;
 	}
 
 	main.hidden {
@@ -135,17 +161,6 @@
 	audio,
 	input {
 		display: block;
-	}
-
-	aside {
-		position: fixed;
-		top: 0;
-		right: 0;
-		width: 900px;
-		overflow-y: auto;
-		bottom: 0;
-		background: rgba(0, 0, 255, 0.5);
-		margin-right: 1em;
 	}
 
 	canvas {

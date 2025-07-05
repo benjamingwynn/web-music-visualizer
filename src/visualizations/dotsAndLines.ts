@@ -239,8 +239,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		const nTargets = 900
 		const nColors = 700
 
-		const smoothness = 0.82
-		const movement = 0.0031
+		const smoothness = 0.9
 
 		let roots = new Float32Array(randomPositions(nRoots))
 		let targets = new Float32Array(randomPositions(nTargets))
@@ -258,9 +257,22 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		 */
 		const rootDirections = new Uint8Array(randomDirections(nRoots))
 
-		// for (let i = 0; i < 100; i++) {
-		// 	rootVelocities[i] = 0.01
+		const onBeat = (strength: number) => {
+			for (let i = 0; i < rootVelocities.length; i++) {
+				rootVelocities[i] = strength * 0.0025
+			}
+		}
+
+		// HACK: debugging
+		// const onClick = () => {
+		// 	console.log("click")
+		// 	onBeat(Math.random())
 		// }
+		// document.addEventListener("click", onClick)
+		// signal.addEventListener("abort", () => {
+		// 	document.removeEventListener("click", onClick)
+		// })
+		// < end debug hack
 
 		const options = new Float32Array([
 			// wRatio
@@ -285,6 +297,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 		let debugAnimate = true
 		let debugSpeed = 0.00008
+		let floatSpeed = 1
 
 		/** returns array of size n randomly containing 1-8 */
 		function randomDirections(n: number) {
@@ -693,8 +706,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		function physics(dT: number) {
 			if (debugAnimate) {
 				for (let i = 0; i < targets.length; i += 2) {
-					targets[i + 0] += -debugSpeed * (i * 0.001)
-					targets[i + 1] += -debugSpeed * (i * 0.001)
+					targets[i + 0] += -(debugSpeed * floatSpeed) * (i * 0.001)
+					targets[i + 1] += -(debugSpeed * floatSpeed) * (i * 0.001)
 
 					if (targets[i + 0] <= 0) targets[i + 0] = 1
 					if (targets[i + 1] <= 0) targets[i + 1] = 1
@@ -765,8 +778,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 							throw new Error("Unexpected direction")
 					}
 
-					roots[i + 0] += deltaX * debugSpeed
-					roots[i + 1] += deltaY * debugSpeed
+					roots[i + 0] += deltaX * (debugSpeed * floatSpeed)
+					roots[i + 1] += deltaY * (debugSpeed * floatSpeed)
 
 					if (rootVelocities[vI] > 0) {
 						const v = rootVelocities[vI]
@@ -841,6 +854,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				masterCtx.font = "36px monospace"
 				masterCtx.fillText("Loading, please wait", 36, 36)
 			} else {
+				// react to music here
+				if (music) {
+					if (music.changed.beat && music.beat.current) {
+						onBeat(music.beat.current.perceivedLoudness)
+					}
+
+					if (music.section.current) {
+						floatSpeed = music.section.current.perceivedLoudness.avg
+					}
+				}
+
 				render()
 			}
 			masterCtx.drawImage(canvas, 0, 0)

@@ -8,12 +8,15 @@
 	export let musicCanvas: MusicCanvas
 	export let onSelect: (file: File) => Promise<void>
 	export let onAnalysis: (analysis: Analysis) => Promise<void>
+	export let onAddToQueue: () => void
 
 	let selected: File | null = null
 	let queue: File[] = []
 	let ready: File[] = []
 	let processing: File[] = []
 	let loadingMusiq = false
+
+	let picker: HTMLInputElement
 
 	const analyses = new Map<File, Promise<Analysis>>()
 	const analysisQueue = pQueue<Analysis>(2)
@@ -71,6 +74,7 @@
 			handleSelection(files[0])
 		}
 		queue = [...queue, ...files]
+		onAddToQueue()
 	}
 
 	const shiftPosition = (delta: number) => {
@@ -84,19 +88,17 @@
 	export const next = () => {
 		shiftPosition(+1)
 	}
-	const previous = () => {
+	export const previous = () => {
 		shiftPosition(-1)
+	}
+	export const openFilePicker = () => {
+		picker.click()
 	}
 </script>
 
 {#if loadingMusiq}
 	<h1>loading musiq lib/models</h1>
 {/if}
-
-<h1>this is the queue</h1>
-<input type="file" on:change={onchange} multiple />
-<button type="button" disabled={locked} on:click={previous}>previous</button>
-<button type="button" disabled={locked} on:click={next}>next</button>
 
 <div class="queue">
 	{#each queue as item}
@@ -115,11 +117,13 @@
 	{/each}
 </div>
 
+<input type="file" on:change={onchange} multiple bind:this={picker} />
+
 <style>
 	.queue {
 		display: flex;
 		flex-flow: column nowrap;
-		max-width: 300px;
+		/* padding-top: calc(100vh - 200px); */
 	}
 
 	.item {
