@@ -256,6 +256,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		 * 8: west (left)
 		 */
 		const rootDirections = new Uint8Array(randomDirections(nRoots))
+		const targetDirections = new Uint8Array(randomDirections(nTargets))
 
 		const onBeat = (strength: number) => {
 			for (let i = 0; i < rootVelocities.length; i++) {
@@ -302,6 +303,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let useOutOfRangeRoots = false
 		let useOutOfRangeTargets = false
 		const outOfRangeTargets = new Set<number>()
+		const inRangeTargets = new Set<number>()
 		const outOfRangeRoots = new Set<number>()
 
 		/** returns array of size n randomly containing 1-8 */
@@ -354,7 +356,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				" cp out : " + msCopyOut + "ms",
 				"mem in  : " + ((roots.byteLength + targets.byteLength) / 1024).toFixed(2) + "k",
 				"options : " + options,
-				"respawn : " + useOutOfRangeRoots + "/" + outOfRangeRoots.size + "/" + useOutOfRangeTargets + "/" + outOfRangeTargets.size,
+				"respawn : " + useOutOfRangeTargets + "/" + inRangeTargets.size + "/" + outOfRangeTargets.size,
 				"",
 				debug0,
 				debug1,
@@ -774,16 +776,26 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				if (useOutOfRangeTargets && outOfRangeTargets.has(i)) {
 					continue
 				}
+				inRangeTargets.add(i)
 
-				targets[i + 0] += -(WORLD_SPEED * floatSpeed) * (i * 0.001)
-				targets[i + 1] += -(WORLD_SPEED * floatSpeed) * (i * 0.001)
+				const vI = Math.floor(i / 2)
+				const direction = targetDirections[vI]
+				const [deltaX, deltaY] = deltasFromDirection(direction)
+
+				targets[i + 0] += deltaX * (WORLD_SPEED * floatSpeed) * (i * 0.001)
+				targets[i + 1] += deltaY * (WORLD_SPEED * floatSpeed) * (i * 0.001)
+
+				const outOfRange = () => {
+					outOfRangeTargets.add(i)
+					inRangeTargets.delete(i)
+				}
 
 				// offscreen fix (X)
-				if (targets[i + 0] < 0) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 0] = 1)
-				else if (targets[i + 0] > 1) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 0] = 0)
+				if (targets[i + 0] < 0) useOutOfRangeTargets ? outOfRange() : (targets[i + 0] = 1)
+				else if (targets[i + 0] > 1) useOutOfRangeTargets ? outOfRange() : (targets[i + 0] = 0)
 				// offscreen fix (Y)
-				if (targets[i + 1] < 0) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 1] = 1)
-				else if (targets[i + 1] > 1) useOutOfRangeTargets ? outOfRangeTargets.add(i) : (targets[i + 1] = 0)
+				if (targets[i + 1] < 0) useOutOfRangeTargets ? outOfRange() : (targets[i + 1] = 1)
+				else if (targets[i + 1] > 1) useOutOfRangeTargets ? outOfRange() : (targets[i + 1] = 0)
 			}
 
 			// with root directions
@@ -859,14 +871,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 					if (music.changed.tatum) {
 						// move an out of range target onto a root when a tatum happens
 						const stuff = [...outOfRangeTargets.values()]
-						for (const index of stuff) {
+						const spawnPoints = [...inRangeTargets.values()]
+						for (const respawnIndex of stuff) {
 							// all of them?
-							const rootIndex = Math.floor(Math.random() * nRoots)
-							if (index !== undefined) {
-								targets[index + 0] = roots[rootIndex + 0]
-								targets[index + 1] = roots[rootIndex + 1]
+							if (respawnIndex !== undefined) {
+								const targetIndex = spawnPoints[Math.floor(Math.random() * spawnPoints.length)] // find an in range target
 
-								outOfRangeTargets.delete(index)
+								targets[respawnIndex + 0] = targets[targetIndex + 0]
+								targets[respawnIndex + 1] = targets[targetIndex + 1]
+
+								outOfRangeTargets.delete(respawnIndex)
+								inRangeTargets.add(respawnIndex)
 							}
 						}
 					}
