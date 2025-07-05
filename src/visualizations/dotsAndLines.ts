@@ -2,25 +2,34 @@
 
 import {MusicCanvas} from "../audio/canvas.ts"
 
-function hueBrightnessToRGB(hue: number, brightness: number) {
+function hueSaturationToRGB(hue: number, saturation: number) {
+	// clamp saturation to [0,1]
+	saturation = Math.max(0, Math.min(1, saturation))
+
 	// wrap hue into [0,1)
 	hue = ((hue % 1) + 1) % 1
 
 	// scale hue up to [0,6)
 	const h6 = hue * 6
 
-	// for each channel, offset h6 by [0,4,2], wrap mod 6, shift by −3, abs(), sub 1, then clamp to [0,1]
+	// Base RGB for pure hue, assuming full saturation
 	const channel = (offset: number) => {
-		let x = (((h6 + offset) % 6) + 6) % 6 // positive mod 6
+		let x = (((h6 + offset) % 6) + 6) % 6
 		x = Math.abs(x - 3) - 1
-		// clamp x to [0,1]
 		return x < 0 ? 0 : x > 1 ? 1 : x
 	}
 
-	// compute R,G,B and multiply each by brightness
-	const r = channel(0) * brightness
-	const g = channel(4) * brightness
-	const b = channel(2) * brightness
+	// Full color
+	const r0 = channel(0)
+	const g0 = channel(4)
+	const b0 = channel(2)
+
+	// Interpolate toward white as saturation decreases (L = 1.0)
+	const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+
+	const r = lerp(1, r0, saturation)
+	const g = lerp(1, g0, saturation)
+	const b = lerp(1, b0, saturation)
 
 	return [r, g, b]
 }
@@ -45,7 +54,8 @@ struct VertexOutput {
 struct Options {
 	wRatio: f32,
 	scale: f32,
-	radius: f32
+	radius: f32,
+	maxRadius: f32,
 };
 
 // note how binding 0 isn't used
@@ -102,7 +112,7 @@ fn main(
 	let vertexIndex = renderIndex % 6u;
 
 	let shapeScale = options.scale;
-	let canvasScale = 1 + (options.radius * 2);
+	let canvasScale = 1 + (options.maxRadius * 2);
 	// let canvasScale = 0.8;
 
 	if (rootIndex < rootLength) {
@@ -205,7 +215,8 @@ struct Line {
 struct Options {
 	wRatio: f32,
 	scale: f32,
-	radius: f32
+	radius: f32,
+	maxRadius: f32,
 };
 
 @group(0) @binding(0) var<storage, read_write> rtn: array<Line>;
@@ -292,14 +303,25 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			}
 		}
 
+		const MAX_RADIUS = 0.1
+
 		const options = new Float32Array([
 			// wRatio
 			1,
 			// scale
 			0.003,
 			// radius
-			0.057,
+			0.007,
+			// max radius
+			MAX_RADIUS,
 		])
+
+		let targetRadius: number = MAX_RADIUS
+		let radiusChangeSpeed = 0.00002
+		/** 0-1 */
+		function setRadius(radius: number) {
+			targetRadius = Math.max(0.1, Math.min(1, radius)) * MAX_RADIUS
+		}
 
 		let enableDrawDebug = true
 		let msCompute: number = 0
@@ -327,8 +349,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 		// HACK: debugging
 		const onClick = () => {
-			console.log("click")
-			onBeat(Math.random())
 			enableDrawDebug = !enableDrawDebug
 		}
 		document.addEventListener("click", onClick)
@@ -348,17 +368,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			const threshold = 0.7
 			let rtn: number[] = []
 			for (let i = 0; i < n; i++) {
-				let r = 0
-				let g = 0
-				let b = 0
+				let r = 0.25
+				let g = 0.25
+				let b = 0.25
 
-				while (r < threshold && g < threshold && b < threshold) {
-					r = Math.random()
-					g = Math.random()
-					b = Math.random()
-				}
+				// while (r < threshold && g < threshold && b < threshold) {
+				// 	r = Math.random()
+				// 	g = Math.random()
+				// 	b = Math.random()
+				// }
 
-				const a = 1
+				const a = 0
 
 				if (colorScheme == "blue") {
 					rtn = [...rtn, Math.min(0.4, r), Math.min(0.4, g), Math.max(0.5, b), a]
@@ -805,7 +825,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 					throw new Error("Unexpected direction")
 				}
 			}
-			return [deltaX, deltaY] as const
+			return [deltaX * options[0], deltaY] as const
 		}
 
 		function physics(dT: number) {
@@ -869,6 +889,15 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				if (colors[aI] > 1) colors[aI] = 1
 				// console.log(colors[aI])
 			}
+
+			// change radius to target
+			if (options[2] < targetRadius) {
+				options[2] += radiusChangeSpeed * dT
+				if (options[2] > targetRadius) options[2] = targetRadius
+			} else if (options[2] > targetRadius) {
+				options[2] -= radiusChangeSpeed * dT
+				if (options[2] < targetRadius) options[2] = targetRadius
+			}
 		}
 
 		const masterCtx = masterCanvas.getContext("2d")
@@ -896,6 +925,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			masterCtx.fillStyle = "black"
 			masterCtx.fillRect(0, 0, masterCanvas.width, masterCanvas.height)
 			resize(ctx)
+			debug0 = possibleNewColors.length + " colors"
 			const msPhysicsStart = performance.now()
 			physics(dT)
 			msPhysics = performance.now() - msPhysicsStart
@@ -913,16 +943,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						lastBeatLoud = music.beat.current.perceivedLoudness
 					}
 
-					if (music.changed.section && music.section.current) {
+					if (music.changed.section && music.section.current && music.segment.current) {
 						floatSpeed = 1 - music.section.current.perceivedLoudness.avg
 						const candidates: [number, number, number, number][] = []
 						for (let i = 0; i < music.section.current.keys.length; i++) {
 							const confidence = music.section.current.keys[i]
-							const addsCandidates = Math.floor(confidence * 20)
-							const hue = i / 24
-							const bright = Math.max((lastBeatLoud ?? 0.25) * 4)
+							const complexity = 60
+							const addsCandidates = Math.floor(confidence * complexity)
+							const variance = 0.5
+							const hue = ((i + 6) % 24) / 24
 							for (let _ = 0; _ < addsCandidates; _++) {
-								const [r, g, b] = hueBrightnessToRGB(hue, bright)
+								const [r, g, b] = hueSaturationToRGB(hue, 1 - variance + variance * Math.random())
 								const alpha = 0
 								const candidate: [number, number, number, number] = [r, g, b, alpha]
 								console.log("ADD candidate:", candidate)
@@ -961,6 +992,12 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 							}
 						}
 					}
+
+					if (music.segment.current) {
+						setRadius(music.segment.current.perceivedLoudness * 2)
+					}
+				} else {
+					setRadius(1)
 				}
 
 				render()
