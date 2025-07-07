@@ -138,7 +138,7 @@ fn main(
 			vec2(left, bottom),
 		);
 
-		let color = vec4f(1.0, 1.0, 1.0, 0.2);
+		let color = vec4f(1.0, 1.0, 1.0, 0.1);
 		let position = vec4f(positions[vertexIndex] * canvasScale, 0, 1.0);
 
 		return VertexOutput(position, color);
@@ -165,7 +165,7 @@ fn main(
 			vec2(left, bottom),
 		);
 
-		let color = vec4f(1.0, 1.0, 1.0, 0.1);
+		let color = vec4f(1.0, 1.0, 1.0, 0.2);
 		let position = vec4f(positions[vertexIndex] * canvasScale, 0, 1.0);
 
 		return VertexOutput(position, color);
@@ -293,8 +293,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		 * 7: south-west (bottom-left)
 		 * 8: west (left)
 		 */
-		const rootDirections = new Uint8Array(randomDirections(nRoots))
-		const targetDirections = new Uint8Array(randomDirections(nTargets))
+		const rootDirections = new Float32Array(randomDirections(nRoots))
+		const targetDirections = new Float32Array(randomDirections(nTargets))
 
 		const onBeat = (strength: number) => {
 			for (let i = 0; i < targetVelocities.length; i++) {
@@ -336,6 +336,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		// let nShapes: number = 0
 		let debug0: string = "debug"
 		let debug1: string = "debug"
+		let debug2: string = "debug"
+		let debug3: string = "debug"
 
 		let WORLD_SPEED = 0.0002
 		let floatSpeed = 0.5
@@ -343,6 +345,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 		let useOutOfRangeTargets = false
 		const outOfRangeTargets = new Set<number>()
+
+		let warpEffectEnabled = true
+		const WARP_EFFECT_SPEED_MAX = 10.5e-5
+		let warpEffectSpeedActual = 0
+		let warpEffectSpeedTarget = 0
+		let warpEffectChangeSpeed = 2.3e-8
+		let rotateSpeedActual = 0
+		let rotateSpeedTarget = 0
+		let rotateChangeSpeed = 0.0001
+
+		let angle = 0
 
 		// HACK: debugging
 		const onClick = (ev) => {
@@ -356,9 +369,31 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		})
 		// < end debug hack
 
+		function rotatePoints(points: Float32Array, angle: number, ratio: number) {
+			if (angle === 0) return
+			const c = Math.cos(angle)
+			const s = Math.sin(angle)
+
+			for (let i = 0; i < points.length; i += 2) {
+				let x = points[i]
+				let y = points[i + 1]
+
+				const tx = x - 0.5
+				const ty = (y - 0.5) * ratio
+
+				// Rotate
+				const rx = c * tx - s * ty
+				const ry = s * tx + c * ty
+
+				// Undo aspect ratio and translation
+				points[i] = rx + 0.5
+				points[i + 1] = ry / ratio + 0.5
+			}
+		}
+
 		/** returns array of size n randomly containing 1-8 */
 		function randomDirections(n: number) {
-			return Array.from({length: Math.floor(n)}).map(() => Math.floor(Math.random() * 8) + 1)
+			return Array.from({length: Math.floor(n)}).map(() => Math.random())
 		}
 		function randomPositions(n = 750) {
 			return Array.from({length: Math.floor(n * 2)}).map(() => Math.random())
@@ -402,10 +437,15 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				" cp out : " + msCopyOut + "ms",
 				"mem in  : " + ((roots.byteLength + targets.byteLength) / 1024).toFixed(2) + "k",
 				"options : " + options,
-				"respawn : " + useOutOfRangeTargets + "/" + outOfRangeTargets.size,
+				"respawn : " + useOutOfRangeTargets + " / " + outOfRangeTargets.size,
+				"warp    : " + warpEffectEnabled + " / " + warpEffectChangeSpeed + " / " + warpEffectSpeedTarget + " / " + warpEffectSpeedActual,
+				"rotate  : " + rotateSpeedTarget + " / " + rotateChangeSpeed + " / " + rotateSpeedActual,
+				,
 				"",
 				debug0,
 				debug1,
+				debug2,
+				debug3,
 			]
 
 			const fontSize = 11
@@ -763,66 +803,45 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		}
 
 		function deltasFromDirection(direction: number): [number, number] {
-			let deltaX: number = 0
-			let deltaY: number = 0
-
-			switch (direction) {
-				// top left
-				case 1: {
-					deltaX = -1
-					deltaY = -1
-					break
-				}
-				// top
-				case 2: {
-					deltaX = 0
-					deltaY = -1
-					break
-				}
-				// top right
-				case 3: {
-					deltaX = +1
-					deltaY = -1
-					break
-				}
-				// right
-				case 4: {
-					deltaX = 1
-					deltaY = 0
-					break
-				}
-				// bottom right
-				case 5: {
-					deltaX = +1
-					deltaY = +1
-					break
-				}
-				// bottom
-				case 6: {
-					deltaX = 0
-					deltaY = +1
-					break
-				}
-				// bottom left
-				case 7: {
-					deltaX = -1
-					deltaY = +1
-					break
-				}
-				// left
-				case 8: {
-					deltaX = -1
-					deltaY = 0
-					break
-				}
-				default: {
-					throw new Error("Unexpected direction")
-				}
+			if (direction < 0 || direction > 1) {
+				throw new Error("Direction must be between 0 and 1 (normalized angle).")
 			}
-			return [deltaX * options[0], deltaY] as const
+
+			const angle = direction * 2 * Math.PI // Convert normalized value to radians
+
+			const deltaX = Math.cos(angle) * options[0]
+			const deltaY = Math.sin(angle)
+
+			return [deltaX, deltaY] as const
 		}
 
 		function physics(dT: number) {
+			// angle+= dT * 0.0001
+			rotatePoints(roots, 0.00005 * dT * rotateSpeedActual, options[0])
+			rotatePoints(targets, 0.00005 * dT * rotateSpeedActual, options[0])
+
+			if (warpEffectEnabled) {
+				for (let i = 0; i < targets.length; i += 2) {
+					const cx = 0.5
+					const cy = 0.5
+					const zx = (targets[i + 0] - cx) * Math.E * warpEffectSpeedActual * dT * options[0]
+					const zy = (targets[i + 1] - cy) * Math.E * warpEffectSpeedActual * dT
+
+					targets[i + 0] += zx
+					targets[i + 1] += zy
+				}
+				// for (let i = 0; i < roots.length; i += 2) {
+				// 	const cx = 0.5
+				// 	const cy = 0.5
+				// 	const zx = (roots[i + 0] - cx) * Math.E * warpEffectSpeedActual * dT
+				// 	const zy = (roots[i + 1] - cy) * Math.E * warpEffectSpeedActual * dT
+
+				// 	roots[i + 0] += zx
+				// 	roots[i + 1] += zy
+				// }
+			}
+			// debug1 = roots[0].toFixed(2) + "," + roots[1].toFixed(2)
+
 			for (let i = 0; i < targets.length; i += 2) {
 				const vI = Math.floor(i / 2)
 				if (useOutOfRangeTargets && outOfRangeTargets.has(vI)) {
@@ -845,12 +864,24 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 					outOfRangeTargets.add(vI)
 				}
 
+				const loop = (fn: () => void) => {
+					fn()
+
+					// const [r, g, b, a] = possibleNewColors[Math.floor(possibleNewColors.length * Math.random())]
+					const [r, g, b, a] = [0.25, 0.25, 0.25, 0]
+					const colorIndex = vI * 4
+					colors[colorIndex + 0] = r
+					colors[colorIndex + 1] = g
+					colors[colorIndex + 2] = b
+					colors[colorIndex + 3] = a
+				}
+
 				// offscreen fix (X)
-				if (targets[i + 0] < 0) useOutOfRangeTargets ? outOfRange() : (targets[i + 0] = 1)
-				else if (targets[i + 0] > 1) useOutOfRangeTargets ? outOfRange() : (targets[i + 0] = 0)
+				if (targets[i + 0] < 0) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 0] = 1))
+				else if (targets[i + 0] > 1) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 0] = 0))
 				// offscreen fix (Y)
-				if (targets[i + 1] < 0) useOutOfRangeTargets ? outOfRange() : (targets[i + 1] = 1)
-				else if (targets[i + 1] > 1) useOutOfRangeTargets ? outOfRange() : (targets[i + 1] = 0)
+				if (targets[i + 1] < 0) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 1] = 1))
+				else if (targets[i + 1] > 1) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 1] = 0))
 			}
 
 			// with root directions
@@ -863,12 +894,17 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				roots[i + 0] += deltaX * (WORLD_SPEED * floatSpeed)
 				roots[i + 1] += deltaY * (WORLD_SPEED * floatSpeed)
 
+				// const backToCenter = () => {
+				// 	roots[i + 0] = 0.5
+				// 	roots[i + 1] = 0.5
+				// }
+
 				// offscreen fix (X)
-				if (roots[i + 0] < 0) roots[i + 0] = 1
-				else if (roots[i + 0] > 1) roots[i + 0] = 0
+				if (roots[i + 0] < 0) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 0] = 1
+				else if (roots[i + 0] > 1) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 0] = 0
 				// offscreen fix (Y)
-				if (roots[i + 1] < 0) roots[i + 1] = 1
-				else if (roots[i + 1] > 1) roots[i + 1] = 0
+				if (roots[i + 1] < 0) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 1] = 1
+				else if (roots[i + 1] > 1) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 1] = 0
 			}
 
 			// increase alpha of colors
@@ -877,6 +913,29 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				if (colors[aI] < 1) colors[aI] += opacityIncreaseSpeed * dT
 				if (colors[aI] > 1) colors[aI] = 1
 				// console.log(colors[aI])
+			}
+
+			// change warp speed
+			if (warpEffectSpeedActual < warpEffectSpeedTarget) {
+				warpEffectSpeedActual += warpEffectChangeSpeed * dT
+			} else if (warpEffectSpeedActual > warpEffectSpeedTarget) {
+				warpEffectSpeedActual -= warpEffectChangeSpeed * dT
+			}
+			// trying to get to 0, so turn off warp once we're there
+			if (warpEffectSpeedTarget === 0 && warpEffectSpeedActual <= 0) {
+				warpEffectSpeedActual = 0
+				warpEffectEnabled = false
+			}
+
+			// change rotate speed
+			if (rotateSpeedActual < rotateSpeedTarget) {
+				rotateSpeedActual += rotateChangeSpeed * dT
+			} else if (rotateSpeedActual > rotateSpeedTarget) {
+				rotateSpeedActual -= rotateChangeSpeed * dT
+			}
+
+			if (rotateSpeedActual <= 0) {
+				rotateSpeedActual = 0
 			}
 
 			// change radius to target
@@ -918,6 +977,31 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			const msPhysicsStart = performance.now()
 			physics(dT)
 			msPhysics = performance.now() - msPhysicsStart
+			const addOutOfRange = () => {
+				const targetsToMove = [...outOfRangeTargets.values()]
+				for (const moveTargetIndex of targetsToMove) {
+					// all of them?
+					if (moveTargetIndex !== undefined) {
+						const moveXyIndex = moveTargetIndex * 2
+
+						const respawnXyIndex = Math.floor((roots.length / 2) * Math.random())
+						targets[moveXyIndex + 0] = roots[respawnXyIndex + 0]
+						targets[moveXyIndex + 1] = roots[respawnXyIndex + 1]
+
+						// setup new color based on possible colors
+						if (possibleNewColors.length) {
+							const [r, g, b, a] = possibleNewColors[Math.floor(possibleNewColors.length * Math.random())]
+							const colorIndex = moveTargetIndex * 4
+							colors[colorIndex + 0] = r
+							colors[colorIndex + 1] = g
+							colors[colorIndex + 2] = b
+							colors[colorIndex + 3] = a
+						}
+
+						outOfRangeTargets.delete(moveTargetIndex)
+					}
+				}
+			}
 			if (!render) {
 				masterCtx.fillStyle = "green"
 				masterCtx.font = "36px monospace"
@@ -925,7 +1009,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			} else {
 				// react to music here
 
-				useOutOfRangeTargets = Boolean(music?.section.current)
+				useOutOfRangeTargets = Boolean(music?.section.current) || warpEffectEnabled
 				if (music) {
 					if (music.changed.beat && music.beat.current) {
 						onBeat(music.beat.current.perceivedLoudness)
@@ -954,36 +1038,40 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 					if (music.changed.tatum || music.changed.section) {
 						// move an out of range target onto a root when a tatum happens
-						const targetsToMove = [...outOfRangeTargets.values()]
-						for (const moveTargetIndex of targetsToMove) {
-							// all of them?
-							if (moveTargetIndex !== undefined) {
-								const moveXyIndex = moveTargetIndex * 2
-
-								const respawnXyIndex = Math.floor((roots.length / 2) * Math.random())
-								targets[moveXyIndex + 0] = roots[respawnXyIndex + 0]
-								targets[moveXyIndex + 1] = roots[respawnXyIndex + 1]
-
-								// setup new color based on possible colors
-								if (possibleNewColors.length) {
-									const [r, g, b, a] = possibleNewColors[Math.floor(possibleNewColors.length * Math.random())]
-									const colorIndex = moveTargetIndex * 4
-									colors[colorIndex + 0] = r
-									colors[colorIndex + 1] = g
-									colors[colorIndex + 2] = b
-									colors[colorIndex + 3] = a
-								}
-
-								outOfRangeTargets.delete(moveTargetIndex)
-							}
-						}
+						addOutOfRange()
 					}
 
 					if (music.segment.current) {
 						setRadius(music.segment.current.perceivedLoudness * 2)
 					}
+
+					let warpReason = null
+					if (music.section.current) {
+						if (music.section.current.perceivedLoudness.min < 0.03) warpReason = "perceivedLoudness.min < 0.03"
+						if (music.section.current.perceivedLoudness.avg < 0.25) warpReason = "perceivedLoudness.avg < 0.25"
+						if (music.section.current.bpm.avg < 90) warpReason = "bpm.avg < 0.25"
+						debug3 = "perceivedLoudness.min=" + music.section.current.perceivedLoudness.avg
+
+						// rotateSpeedTarget = Math.min(music.section.current.bpm.avg, 180) / 180
+						if (warpReason) {
+							rotateSpeedTarget = (Math.min(music.section.current.bpm.avg, 180) / 180) * Math.E
+						} else {
+							rotateSpeedTarget = Math.min(music.section.current.bpm.avg, 180) / 180
+						}
+					}
+					if (warpReason) {
+						warpEffectSpeedTarget = WARP_EFFECT_SPEED_MAX * (1 - (music.section.current?.perceivedLoudness.avg ?? 1))
+						warpEffectEnabled = true
+						debug2 = warpReason
+					} else {
+						warpEffectSpeedTarget = 0
+						debug2 = "no warp reason"
+					}
 				} else {
+					warpEffectSpeedTarget = 0
+					rotateSpeedTarget = 0
 					setRadius(0.5)
+					addOutOfRange()
 				}
 
 				render()
