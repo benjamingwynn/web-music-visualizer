@@ -298,12 +298,12 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 		const onBeat = (strength: number) => {
 			for (let i = 0; i < targetVelocities.length; i++) {
-				targetVelocities[i] = strength * 0.0025
+				targetVelocities[i] = Math.min(1, strength) * 0.0025
 			}
 		}
 
 		const MAX_RADIUS = 0.07
-		const MIN_RADIUS = 0.01
+		const MIN_RADIUS = 0.015
 
 		const options = new Float32Array([
 			// wRatio
@@ -338,6 +338,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let debug1: string = "debug"
 		let debug2: string = "debug"
 		let debug3: string = "debug"
+		let debug4: string = "debug"
+		// let debug: string = []
 
 		let WORLD_SPEED = 0.0002
 		let floatSpeed = 0.5
@@ -446,6 +448,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				debug1,
 				debug2,
 				debug3,
+				debug4,
 			]
 
 			const fontSize = 11
@@ -966,7 +969,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			render = r
 		})
 		let possibleNewColors: [number, number, number, number][] = []
-		let lastBeatLoud: number
 		return (dT, music) => {
 			canvas.height = masterCanvas.height
 			canvas.width = masterCanvas.width
@@ -1011,10 +1013,10 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 				useOutOfRangeTargets = Boolean(music?.section.current) || warpEffectEnabled
 				if (music) {
-					if (music.changed.beat && music.beat.current) {
-						onBeat(music.beat.current.perceivedLoudness)
-						lastBeatLoud = music.beat.current.perceivedLoudness
+					if (music.changed.beat && music.beat.current && music.segment.current) {
+						onBeat(music.beat.current.perceivedLoudness * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
 					}
+					debug4 = "loudness:" + music.segment.current?.perceivedLoudness
 
 					if (music.section.current && music.segment.current && (music.changed.section || !possibleNewColors.length)) {
 						floatSpeed = 1 - music.section.current.perceivedLoudness.avg
