@@ -296,9 +296,11 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		const rootDirections = new Float32Array(randomDirections(nRoots))
 		const targetDirections = new Float32Array(randomDirections(nTargets))
 
+		const BEAT_STRENGTH_VELOCITY_MODIFIER = 0.0017
+
 		const onBeat = (strength: number) => {
 			for (let i = 0; i < targetVelocities.length; i++) {
-				targetVelocities[i] = Math.min(1, strength) * 0.0025
+				targetVelocities[i] = Math.min(1, strength) * BEAT_STRENGTH_VELOCITY_MODIFIER
 			}
 		}
 
@@ -341,7 +343,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let debug4: string = "debug"
 		// let debug: string = []
 
-		let WORLD_SPEED = 0.0002
+		let WORLD_SPEED = 0.0001
 		let floatSpeed = 0.5
 		let opacityIncreaseSpeed = 0.001
 
@@ -929,6 +931,10 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				warpEffectSpeedActual = 0
 				warpEffectEnabled = false
 			}
+			if (warpEffectSpeedActual > WARP_EFFECT_SPEED_MAX) {
+				// fix warp thats too high from a very big frame time
+				warpEffectSpeedActual = WARP_EFFECT_SPEED_MAX
+			}
 
 			// change rotate speed
 			if (rotateSpeedActual < rotateSpeedTarget) {
@@ -1013,8 +1019,14 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 				useOutOfRangeTargets = Boolean(music?.section.current) || warpEffectEnabled
 				if (music) {
-					if (music.changed.beat && music.beat.current && music.segment.current) {
-						onBeat(music.beat.current.perceivedLoudness * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
+					if (warpEffectEnabled) {
+						if (music.changed.tatum && music.tatum.current && music.segment.current) {
+							onBeat(music.tatum.current?.confidence * 0.5 * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
+						}
+					} else {
+						if (music.changed.beat && music.beat.current && music.segment.current) {
+							onBeat(music.beat.current?.perceivedLoudness * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
+						}
 					}
 					debug4 = "loudness:" + music.segment.current?.perceivedLoudness
 
@@ -1031,14 +1043,14 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 								const [r, g, b] = hueSaturationToRGB(hue, 1 - variance + variance * Math.random())
 								const alpha = 0
 								const candidate: [number, number, number, number] = [r, g, b, alpha]
-								console.log("ADD candidate:", candidate)
+								// console.log("ADD candidate:", candidate)
 								candidates.push(candidate)
 							}
 						}
 						if (candidates.length) possibleNewColors = candidates
 					}
 
-					if (music.changed.tatum || music.changed.section) {
+					if ((warpEffectEnabled && music.changed.beat) || (!warpEffectEnabled && music.changed.tatum)) {
 						// move an out of range target onto a root when a tatum happens
 						addOutOfRange()
 					}

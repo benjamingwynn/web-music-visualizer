@@ -49,6 +49,10 @@
 	const onchange = async (event: any) => {
 		const files = event?.target?.files as File[]
 		if (!files) return
+		await onFiles(files)
+	}
+
+	const onFiles = async (files: File[]) => {
 		for (const file of files) {
 			const fn = async () => {
 				// todo: do we wanna queue?
@@ -118,6 +122,19 @@
 </div>
 
 <input type="file" on:change={onchange} multiple bind:this={picker} />
+
+<svelte:body
+	on:drop={(ev) => {
+		const files = [...(ev.dataTransfer?.items ?? [])].flatMap((item, i) => {
+			if (item.kind === "file") {
+				const file = item.getAsFile()
+				if (file) return file
+			}
+			return []
+		})
+		onFiles(files)
+	}}
+/>
 
 <style>
 	.queue {

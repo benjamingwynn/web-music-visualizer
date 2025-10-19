@@ -161,7 +161,7 @@ MusicCanvas.registerVisualization("debug", {
 				const s = Math.floor(canvas.width * 0.1)
 				ctx.font = s + "px monospace"
 				// todo: pull from project package json
-				const t = "v2507"
+				const t = "v2510"
 				const w = ctx.measureText(t)
 				ctx.fillText(t, cX - w.width / 2, cY + w.fontBoundingBoxDescent)
 			}

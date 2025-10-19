@@ -118,7 +118,8 @@
 	}
 </script>
 
-<svelte:window on:resize={onResize} on:mousemove={onMouse} on:keydown={onKey} />
+<svelte:window on:resize={onResize} on:mousemove={onMouse} on:keydown={onKey} on:drop|preventDefault on:dragover|preventDefault />
+
 <canvas bind:this={canvas}></canvas>
 
 <div class="error" hidden={!$musicCanvasError}>
