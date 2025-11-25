@@ -80,27 +80,12 @@
 	<button type="button" on:click={() => (showCode = !showCode)}>show code</button>
 </div>
 
-{#if showCode}
-	<div class="editor" hidden={showList}>
-		<CodeEditor></CodeEditor>
-	</div>
-{/if}
-
 <style lang="less">
 	.list {
 		display: flex;
 		flex-flow: column nowrap;
 		overflow-y: auto;
 		max-height: 600px;
-	}
-
-	.editor {
-		position: fixed;
-		top: 30%;
-		left: 30%;
-		height: 800px;
-		width: 800px;
-		box-shadow: 0 0 1em black;
 	}
 
 	.float {

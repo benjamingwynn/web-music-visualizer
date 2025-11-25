@@ -5,8 +5,11 @@
 	import {onMount, getContext} from "svelte"
 	import type {Writable} from "svelte/store"
 	import tsBlankSpace from "ts-blank-space"
+	import Window from "./Window.svelte"
 
 	const editorFocused = getContext<Writable<boolean>>("editorFocused")
+
+	let evalOnChange = true
 
 	let container: HTMLElement
 	var defaultCode = defaultText
@@ -23,14 +26,22 @@
 	function run() {
 		const code = editor.getValue()
 		localStorage._editorValue = code
+		console.log("compiling...")
 		const runtimeCode = tsBlankSpace(code)
-		try {
-			eval(runtimeCode)
-			error = undefined
-		} catch (err: any) {
-			console.error(err)
-			window._error = err
-			error = _error.toString()
+		console.log("... compile okay!")
+
+		if (evalOnChange) {
+			console.log("evaluating...")
+			try {
+				eval(runtimeCode)
+				error = undefined
+				console.log("... runtime okay!")
+			} catch (err: any) {
+				console.log("... runtime error!")
+				console.error(err)
+				window._error = err
+				error = _error.toString()
+			}
 		}
 	}
 
@@ -95,7 +106,7 @@
 				enabled: false,
 			},
 		})
-		run()
+		// run()
 
 		// Focus event
 		editor.onDidFocusEditorText(() => {
@@ -120,11 +131,27 @@
 	})
 </script>
 
-{#if error}
-	<div class="error">{error}</div>
-{/if}
+<Window
+	onResize={() => {
+		console.log("resized window!")
+		requestAnimationFrame(() => {
+			editor.layout()
+		})
+	}}
+>
+	<div class="outer">
+		{#if error}
+			<div class="error">{error}</div>
+		{/if}
 
-<div class="editor" bind:this={container}></div>
+		<div class="editor" bind:this={container}></div>
+
+		<div class="controls">
+			<button type="button">execute code</button>
+			<label><input type="checkbox" bind:checked={evalOnChange} /> automatically execute on code change</label>
+		</div>
+	</div>
+</Window>
 
 <style>
 	.error {
@@ -133,7 +160,16 @@
 		border: solid thin red;
 	}
 
-	.editor {
+	.outer {
+		--controls-height: 4em;
 		height: 100%;
+	}
+
+	.editor {
+		height: calc(100% - var(--controls-height));
+	}
+
+	.controls {
+		height: var(--controls-height);
 	}
 </style>

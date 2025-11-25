@@ -6,6 +6,8 @@
 	import type {Analysis} from "musiq"
 	import {writable} from "svelte/store"
 	import QueueItem from "./QueueItem.svelte"
+	import NotChromeWarning from "./NotChromeWarning.svelte"
+	import CodeEditor from "./CodeEditor.svelte"
 
 	const editorFocused = writable(false)
 	setContext("editorFocused", editorFocused) //<Writable<boolean>>("editorFocused")
@@ -118,6 +120,8 @@
 	}
 </script>
 
+<NotChromeWarning />
+
 <svelte:window on:resize={onResize} on:mousemove={onMouse} on:keydown={onKey} on:drop|preventDefault on:dragover|preventDefault />
 
 <canvas bind:this={canvas}></canvas>
@@ -140,6 +144,8 @@
 
 	<Options {musicCanvas} />
 </main>
+
+<CodeEditor></CodeEditor>
 
 <style>
 	:global(html, body) {
