@@ -2,29 +2,25 @@
 
 import {MusicCanvas} from "../audio/canvas.ts"
 
+/** util function for hue and saturation to [r,g,b] */
 function hueSaturationToRGB(hue: number, saturation: number) {
-	// clamp saturation to [0,1]
+	// clamp
 	saturation = Math.max(0, Math.min(1, saturation))
 
-	// wrap hue into [0,1)
+	// magic
 	hue = ((hue % 1) + 1) % 1
-
-	// scale hue up to [0,6)
 	const h6 = hue * 6
 
-	// Base RGB for pure hue, assuming full saturation
 	const channel = (offset: number) => {
 		let x = (((h6 + offset) % 6) + 6) % 6
 		x = Math.abs(x - 3) - 1
 		return x < 0 ? 0 : x > 1 ? 1 : x
 	}
 
-	// Full color
 	const r0 = channel(0)
 	const g0 = channel(4)
 	const b0 = channel(2)
 
-	// Interpolate toward white as saturation decreases (L = 1.0)
 	const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 	const r = lerp(1, r0, saturation)
@@ -268,8 +264,8 @@ struct Options {
 MusicCanvas.registerVisualization("dotsAndLines", {
 	info: {
 		name: "Dots and Lines",
-		author: "benjamin",
-		description: "WORK IN PROGRESS -- WebGPU port of the spotifystarfield.com visualization",
+		author: "Benjamin Gwynn",
+		description: "WebGPU port of my original spotifystarfield.com visualization",
 		gpu: "webgpu",
 	},
 	does: (masterCanvas, signal) => {

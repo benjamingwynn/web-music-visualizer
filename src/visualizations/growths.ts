@@ -1,7 +1,7 @@
 MusicCanvas.registerVisualization("growths", {
 	info: {
 		name: "Doodle Flowers",
-		author: "benjamin",
+		author: "Benjamin Gwynn",
 		description: "Doodles of flowers grow with the music. Works well for slow music with synths.",
 	},
 	does: (canvas) => {
@@ -162,7 +162,6 @@ MusicCanvas.registerVisualization("growths", {
 			}
 
 			remove() {
-				console.log("REMOVE!±!!")
 				plants.delete(this)
 			}
 		}
@@ -177,7 +176,7 @@ MusicCanvas.registerVisualization("growths", {
 			}
 
 			if (!plants.size && !music) {
-				plants.add(new Growth(0.5, 0.5 * Math.random() + 0.3, 1500 + Math.random() * 500, "90deg 75% 50%", 0.5, Math.random(), 0.5))
+				plants.add(new Growth(0.5, 0.9, 50_000, "90deg 75% 50%", 0.5, Math.random(), 1.0))
 			}
 
 			if (music?.changed.beat && music.segment.current && music.section.current && music.beat.current?.perceivedLoudness) {

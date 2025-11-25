@@ -3,7 +3,7 @@ import {MusicCanvas} from "../audio/canvas.ts"
 MusicCanvas.registerVisualization("ps1", {
 	info: {
 		name: "80s Shape Emulator",
-		author: "benjamin",
+		author: "Benjamin Gwynn",
 		description: "draws neon shapes in sync with the music at a low resolution",
 	},
 	does: (masterCanvas) => {
@@ -40,15 +40,20 @@ MusicCanvas.registerVisualization("ps1", {
 		}
 
 		class Thing {
-			constructor(
-				private timeOffset: number = 0,
-				private spinSpeed: number = 0.001,
-				private growSpeed = 1,
-				private shape: number = 6,
-				private color = "white",
-				private alt = false
-			) {
+			private timeOffset: number
+			private spinSpeed: number
+			private growSpeed: number
+			private shape: number
+			private color: string
+			private alt: boolean
+			constructor(timeOffset: number = 0, spinSpeed: number = 0.001, growSpeed = 1, shape: number = 6, color = "white", alt = false) {
 				// .
+				this.timeOffset = timeOffset
+				this.spinSpeed = spinSpeed
+				this.growSpeed = growSpeed
+				this.shape = shape
+				this.color = color
+				this.alt = alt
 			}
 			public grow = true
 			public size = 0

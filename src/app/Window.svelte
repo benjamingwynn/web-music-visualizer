@@ -1,10 +1,14 @@
 <script lang="ts">
 	import {onMount} from "svelte"
 
-	let x = 50
-	let y = 50
-	let w = 250
-	let h = 150
+	window.nWindows = window.nWindows ? window.nWindows + 1 : 1
+
+	let x = 20 * window.nWindows
+	let y = 20 * window.nWindows
+	let w = 500
+	let h = 600
+
+	export let hidden
 
 	let titlebarHeight = 32
 
@@ -49,6 +53,8 @@
 
 	export let onResize = () => {}
 	export let onClose = () => {}
+
+	export let title = "window title"
 
 	const MIN_WIDTH = 250
 	const MIN_HEIGHT_FULL = 150 + titlebarHeight // full minimum including titlebar
@@ -139,6 +145,8 @@
 		const south = ev.clientY >= box.bottom && ev.clientY <= box.bottom + resizeHitboxSize
 		const north = ev.clientY <= box.top && ev.clientY >= box.top - resizeHitboxSize
 
+		if (dragging) return
+
 		if (north && east) {
 			resizeHintDirection = "ne"
 		} else if (north && west) {
@@ -205,6 +213,7 @@
 	style:--w={w}
 	style:--h={h}
 	role="dialog"
+	{hidden}
 	on:mouseleave={() => {
 		resizeHintDirection = null
 	}}
@@ -226,7 +235,10 @@
 			}
 		}}
 	>
-		<div class="title">window title <code>{resizeHintDirection}</code> <code>{mouseX}</code> <code>{mouseY}</code></div>
+		<div class="title">
+			{title}
+			<!-- <code>{resizeHintDirection}</code> <code>{mouseX}</code> <code>{mouseY}</code> -->
+		</div>
 		<div class="controls">
 			<button
 				class="control-close"
@@ -263,6 +275,7 @@
 		padding: 0 0.5em;
 		cursor: move;
 		user-select: none;
+		background: rgba(0, 0, 0, 0.5);
 
 		.controls {
 			margin-left: auto;

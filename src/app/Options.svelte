@@ -1,5 +1,4 @@
 <script lang="ts">
-	import CodeEditor from "./CodeEditor.svelte"
 	import {MusicCanvas} from "../audio/canvas"
 	import {onMount, getContext} from "svelte"
 	import type {Writable} from "svelte/store"
@@ -9,10 +8,13 @@
 	export let musicCanvas: MusicCanvas
 	let showList = false
 
+	const showVisualizationUrl = getContext<Writable<string[]>>("showVisualizationUrl")
+
 	const selectedId = musicCanvas.currentVisualizationIdStore
 	const all = MusicCanvas.registeredVisualizationsStore
 	$: active = $all.find(([id]) => id === $selectedId)?.[1]
 
+	//
 	const shift = (delta: number) => {
 		const i = $all.findIndex(([x]) => x === $selectedId)
 		const n = $all[i + delta]
@@ -61,6 +63,17 @@
 				<h2>{vis.info.name}</h2>
 				<h3>{vis.info.author}</h3>
 				<h4>{vis.info.description}</h4>
+				{#if vis.url}
+					<h4>{vis.url}</h4>
+					<button
+						type="button"
+						on:click={(ev) => {
+							ev.preventDefault()
+							ev.stopPropagation()
+							if (vis.url) $showVisualizationUrl = [...$showVisualizationUrl, vis.url]
+						}}>edit code</button
+					>
+				{/if}
 			</button>
 		{/each}
 	</div>
@@ -77,7 +90,7 @@
 	<h4>{active?.info.description}</h4>
 	<h3>{active?.info.author}</h3>
 
-	<button type="button" on:click={() => (showCode = !showCode)}>show code</button>
+	<!-- <button type="button" on:click={() => (showCode = !showCode)}>show code</button> -->
 </div>
 
 <style lang="less">
@@ -85,7 +98,7 @@
 		display: flex;
 		flex-flow: column nowrap;
 		overflow-y: auto;
-		max-height: 600px;
+		max-height: 630px;
 	}
 
 	.float {

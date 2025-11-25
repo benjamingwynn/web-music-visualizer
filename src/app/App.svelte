@@ -8,9 +8,48 @@
 	import QueueItem from "./QueueItem.svelte"
 	import NotChromeWarning from "./NotChromeWarning.svelte"
 	import CodeEditor from "./CodeEditor.svelte"
+	import LoadCode from "./LoadCode.svelte"
+
+	const DEFAULT_LOAD_LIST = [
+		"/visualizations/ps1.ts",
+		"/visualizations/dotsAndLines.ts",
+		"/visualizations/growths.ts",
+		"/visualizations/particleSymphony.ts",
+		"/visualizations/needles.ts",
+		"/visualizations/sonicBloom.ts",
+		"/visualizations/circles.ts",
+		"/visualizations/pulseGrid.ts",
+		"/visualizations/harmonic-strands.ts",
+		"/visualizations/cosmicHarmony.ts",
+		"/visualizations/resonantShardsStillheartCrystal.ts",
+		"/visualizations/cosmic-ripples.ts",
+		"/visualizations/aquaticRhythm.ts",
+		"/visualizations/wavegrid.ts",
+		"/visualizations/aurora-waves.ts",
+		"/visualizations/prismPulse.ts",
+		"/visualizations/spectrumBloom.ts",
+		"/visualizations/auroraPulse.ts",
+		"/visualizations/cosmicPulsars.ts",
+		"/visualizations/cosmicSoundscape.ts",
+		"/visualizations/harmonicCosmos.ts",
+		"/visualizations/starlightDrift.ts",
+		"/visualizations/rhythmicWaves.ts",
+		"/visualizations/stardustSync.ts",
+		"/visualizations/stardustSynesthesia.ts",
+		"/visualizations/synestheticGarden.ts",
+		"/visualizations/harmonicEcosystem.ts",
+		"/visualizations/harmonicBloom.ts",
+		"/visualizations/sonic-springs.ts",
+		"/visualizations/chromatic-cascade.ts",
+		"/visualizations/audioBloom.ts",
+		"/visualizations/stellar-synapse.ts",
+	]
 
 	const editorFocused = writable(false)
 	setContext("editorFocused", editorFocused) //<Writable<boolean>>("editorFocused")
+
+	const showVisualizationUrl = writable<string[]>([])
+	setContext("showVisualizationUrl", showVisualizationUrl)
 
 	let canvas: HTMLCanvasElement
 	let main: HTMLElement
@@ -30,6 +69,11 @@
 
 		nextFrame = requestAnimationFrame(frame)
 	}
+
+	let userLoadList = localStorage.userLoadList ? JSON.parse(localStorage.userLoadList) : []
+	$: localStorage.userLoadList = JSON.stringify(userLoadList)
+	let loadList: string[]
+	$: loadList = [...DEFAULT_LOAD_LIST, ...userLoadList]
 
 	let nextSong: () => void
 	let prevSong: () => void
@@ -108,6 +152,18 @@
 			return
 		}
 
+		if (ev.key === "c") {
+			ev.preventDefault()
+			if (musicCanvas.currentVisualization?.url) {
+				if ($showVisualizationUrl.includes(musicCanvas.currentVisualization.url)) {
+					$showVisualizationUrl = $showVisualizationUrl.filter((x) => x !== musicCanvas.currentVisualization?.url)
+				} else {
+					$showVisualizationUrl = [musicCanvas.currentVisualization.url]
+				}
+			}
+			return
+		}
+
 		if (ev.key === "k" || ev.key === "Space") {
 			ev.preventDefault()
 			if (audio.paused) {
@@ -145,7 +201,11 @@
 	<Options {musicCanvas} />
 </main>
 
-<CodeEditor></CodeEditor>
+<!-- <CodeEditor url={".temp"} title="h" code="// hello world"></CodeEditor> -->
+
+{#each loadList as url}
+	<LoadCode hidden={!$showVisualizationUrl.includes(url)} {url} />
+{/each}
 
 <style>
 	:global(html, body) {
@@ -159,6 +219,9 @@
 	}
 
 	.error {
+		top: 0;
+		bottom: 0;
+		left: 0;
 		position: fixed;
 		background-color: pink;
 		color: darkred;

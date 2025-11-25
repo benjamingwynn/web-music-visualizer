@@ -2,7 +2,7 @@ import {MusicCanvas} from "../audio/canvas.ts"
 
 MusicCanvas.registerVisualization("needles", {
 	info: {
-		author: "benjamin",
+		author: "Benjamin Gwynn",
 		name: "Needles",
 		description: "Compass needles point to moving circles, only matches very specific music.",
 	},

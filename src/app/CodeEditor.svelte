@@ -1,6 +1,6 @@
 <script lang="ts">
 	import types from "./CodeEditorTypes.txt"
-	import defaultText from "./CodeEditorDefault.txt"
+	// import defaultText from "./CodeEditorDefault.txt"
 	import * as monaco from "monaco-editor"
 	import {onMount, getContext} from "svelte"
 	import type {Writable} from "svelte/store"
@@ -9,11 +9,21 @@
 
 	const editorFocused = getContext<Writable<boolean>>("editorFocused")
 
+	const showVisualizationUrl = getContext<Writable<string[] | undefined>>("showVisualizationUrl")
+
 	let evalOnChange = true
+	let immediatelyEval = true
 
 	let container: HTMLElement
-	var defaultCode = defaultText
-	var jsCode = localStorage._editorValue ?? defaultCode
+	// var defaultCode = defaultText
+	// var jsCode = localStorage._editorValue ?? defaultCode
+	export let code: string
+	export let title: string
+	export let onChange = (code: string) => {}
+	export let hidden = false
+	export let url: string
+
+	$: hidden, requestAnimationFrame(() => editor.layout())
 
 	let editor: monaco.editor.IStandaloneCodeEditor
 
@@ -23,25 +33,33 @@
 		editor.setValue(code)
 	}
 
-	function run() {
-		const code = editor.getValue()
-		localStorage._editorValue = code
+	function doEval(runtimeCode: string) {
+		console.log("evaluating...", {runtimeCode})
+		try {
+			window._evalUrl = url
+			const evaluate = function evaluate() {
+				eval(runtimeCode)
+			}
+			evaluate()
+			error = undefined
+			console.log("... runtime okay!")
+		} catch (err: any) {
+			console.log("... runtime error!")
+			$showVisualizationUrl = [...$showVisualizationUrl, window._evalUrl]
+			console.error(err)
+			window._error = err
+			error = _error.toString()
+		}
+	}
+
+	function run(newCode: string) {
+		// localStorage._editorValue = code
 		console.log("compiling...")
-		const runtimeCode = tsBlankSpace(code)
+		const runtimeCode = tsBlankSpace(newCode)
 		console.log("... compile okay!")
 
 		if (evalOnChange) {
-			console.log("evaluating...")
-			try {
-				eval(runtimeCode)
-				error = undefined
-				console.log("... runtime okay!")
-			} catch (err: any) {
-				console.log("... runtime error!")
-				console.error(err)
-				window._error = err
-				error = _error.toString()
-			}
+			doEval(runtimeCode)
 		}
 	}
 
@@ -99,7 +117,7 @@
 		}
 
 		editor = monaco.editor.create(container, {
-			value: jsCode,
+			value: code,
 			language: "typescript",
 			theme: "vs-dark",
 			minimap: {
@@ -109,20 +127,29 @@
 		// run()
 
 		// Focus event
-		editor.onDidFocusEditorText(() => {
+		editor.onDidFocusEditorWidget(() => {
 			$editorFocused = true
 			console.log("Editor is focused")
 		})
 
 		// Blur (unfocused) event
-		editor.onDidBlurEditorText(() => {
+		editor.onDidBlurEditorWidget(() => {
 			$editorFocused = false
 			console.log("Editor lost focus")
 		})
 
+		let lastCode = code
 		editor.onKeyUp(() => {
-			run()
+			const code = editor.getValue()
+			if (code === lastCode) return
+			lastCode = code
+			onChange(code)
+			run(code)
 		})
+
+		if (immediatelyEval) {
+			run(code)
+		}
 
 		return () => {
 			$editorFocused = false
@@ -132,6 +159,11 @@
 </script>
 
 <Window
+	onClose={() => {
+		$showVisualizationUrl = $showVisualizationUrl.filter((x) => x !== url)
+	}}
+	{hidden}
+	{title}
 	onResize={() => {
 		console.log("resized window!")
 		requestAnimationFrame(() => {
@@ -147,7 +179,18 @@
 		<div class="editor" bind:this={container}></div>
 
 		<div class="controls">
-			<button type="button">execute code</button>
+			<button
+				type="button"
+				on:click={() => {
+					const code = editor.getValue()
+
+					console.log("compiling...")
+					const runtimeCode = tsBlankSpace(code)
+					console.log("... compile okay!")
+
+					doEval(runtimeCode)
+				}}>execute code</button
+			>
 			<label><input type="checkbox" bind:checked={evalOnChange} /> automatically execute on code change</label>
 		</div>
 	</div>

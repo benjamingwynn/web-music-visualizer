@@ -18,12 +18,13 @@ type VisualizationInfo = {
 type Visualization = {
 	does: VisualizationWork
 	info: VisualizationInfo
+	url?: string
 }
 
 export class MusicCanvas {
 	public currentVisualizationId!: string
 	public currentVisualizationIdStore = writable<string>()
-	private currentVisualization?: Visualization
+	public currentVisualization?: Visualization
 	private currentVisualizationRender?: VisualizationRender
 	private audioTracker?: AudioTracker
 	public static registeredVisualizations = new Map<string, Visualization>()
@@ -119,6 +120,7 @@ export class MusicCanvas {
 	private static constructed = new Set<MusicCanvas>()
 
 	public static registerVisualization(id: string, visualization: Visualization) {
+		visualization.url = window._evalUrl
 		MusicCanvas.registeredVisualizations.set(id, visualization)
 		MusicCanvas.registeredVisualizationsStore.update(() => {
 			const rtn = [...MusicCanvas.registeredVisualizations.entries()]
@@ -139,9 +141,9 @@ window.MusicCanvas = MusicCanvas
 // register the debug visualization
 MusicCanvas.registerVisualization("debug", {
 	info: {
-		name: "Debug Visualization",
-		author: "benjamin",
-		description: "tests the functionality of registering a visualization",
+		name: "Welcome Visualization",
+		author: "Benjamin Gwynn",
+		description: "tests the functionality of registering a visualization and welcomes the user to the platform",
 	},
 	does: (canvas) => {
 		// do setup here
@@ -152,18 +154,45 @@ MusicCanvas.registerVisualization("debug", {
 		return (dT, music) => {
 			// draw stuff here
 			ctx.clearRect(0, 0, canvas.width, canvas.height)
-			ctx.fillStyle = "seagreen"
+			ctx.fillStyle = "royalblue"
 
 			const cX = canvas.width / 2
-			const cY = canvas.height / 2
+			const cY = canvas.height / 3
 
+			const s1 = Math.floor(canvas.width * 0.1)
 			{
-				const s = Math.floor(canvas.width * 0.1)
+				const s = s1
 				ctx.font = s + "px monospace"
 				// todo: pull from project package json
 				const t = "v2511"
 				const w = ctx.measureText(t)
 				ctx.fillText(t, cX - w.width / 2, cY + w.fontBoundingBoxDescent)
+			}
+
+			{
+				const about = [
+					//
+					"in-browser music visualization experiment",
+					"to use, add music files from your filesystem, then pick a visualization.",
+					"",
+					"most visualizations are written by me or by an LLM, with interesting results!",
+					"all processing is done locally in the browser, no data is collected.",
+					"highly experimental alpha software! works best in chrome!",
+					"you can view and edit any code for any visualizations.",
+					"under the hood this uses a mix of ML and traditional audio processing.",
+					"",
+					"absolutely no warranty! don't pirate music ;)",
+				]
+				let py = s1
+				const s = Math.floor(canvas.width * 0.02)
+				ctx.font = s + "px monospace"
+				for (const ln of about) {
+					if (ln) {
+						const w = ctx.measureText(ln)
+						ctx.fillText(ln, cX - w.width / 2, cY + w.fontBoundingBoxDescent + py)
+					}
+					py += s
+				}
 			}
 
 			if (!music) {
@@ -189,4 +218,4 @@ MusicCanvas.registerVisualization("debug", {
 	},
 })
 
-import("../visualizations/index.ts")
+// import("../visualizations/index.ts")

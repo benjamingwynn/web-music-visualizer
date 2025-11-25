@@ -3,7 +3,7 @@ import {MusicCanvas} from "../audio/canvas.ts"
 MusicCanvas.registerVisualization("circles", {
 	info: {
 		name: "Circles",
-		author: "benjamin",
+		author: "Benjamin Gwynn",
 		description: "a very simple example visualization",
 	},
 	does: (canvas) => {
