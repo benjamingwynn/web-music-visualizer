@@ -3,6 +3,7 @@ MusicCanvas.registerVisualization("growths", {
 		name: "Doodle Flowers",
 		author: "Benjamin Gwynn",
 		description: "Doodles of flowers grow with the music. Works well for slow music with synths.",
+		rating: 3,
 	},
 	does: (canvas) => {
 		// do your world setup, canvas setup, etc here

@@ -16,12 +16,15 @@
 
 	//
 	const shift = (delta: number) => {
-		const i = $all.findIndex(([x]) => x === $selectedId)
+		let i = $all.findIndex(([x]) => x === $selectedId)
+		if (i === 0) i = 1
 		const n = $all[i + delta]
-		if (n) {
+		if (i + delta == -1) {
+			musicCanvas.startVisualization($all.at(-1)?.[0] as any)
+		} else if (n) {
 			musicCanvas.startVisualization(n[0])
 		} else {
-			musicCanvas.startVisualization($all[0][0])
+			musicCanvas.startVisualization($all[1][0])
 		}
 	}
 	const next = () => shift(+1)
@@ -98,7 +101,7 @@
 		display: flex;
 		flex-flow: column nowrap;
 		overflow-y: auto;
-		max-height: 630px;
+		max-height: 930px;
 	}
 
 	.float {

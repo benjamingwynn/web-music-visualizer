@@ -5,6 +5,7 @@ MusicCanvas.registerVisualization("needles", {
 		author: "Benjamin Gwynn",
 		name: "Needles",
 		description: "Compass needles point to moving circles, only matches very specific music.",
+		rating: 2,
 	},
 	does: (canvas) => {
 		const ctx = canvas.getContext("2d")

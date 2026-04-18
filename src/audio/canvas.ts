@@ -13,6 +13,7 @@ type VisualizationInfo = {
 	name?: string
 	description?: string
 	gpu?: "webgpu"
+	rating?: number
 }
 
 type Visualization = {
@@ -164,7 +165,7 @@ MusicCanvas.registerVisualization("debug", {
 				const s = s1
 				ctx.font = s + "px monospace"
 				// todo: pull from project package json
-				const t = "v2511"
+				const t = "v2603"
 				const w = ctx.measureText(t)
 				ctx.fillText(t, cX - w.width / 2, cY + w.fontBoundingBoxDescent)
 			}
@@ -184,7 +185,7 @@ MusicCanvas.registerVisualization("debug", {
 					"absolutely no warranty! don't pirate music ;)",
 				]
 				let py = s1
-				const s = Math.floor(canvas.width * 0.02)
+				const s = Math.floor(canvas.width * 0.013)
 				ctx.font = s + "px monospace"
 				for (const ln of about) {
 					if (ln) {

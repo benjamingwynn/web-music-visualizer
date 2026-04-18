@@ -267,6 +267,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		author: "Benjamin Gwynn",
 		description: "WebGPU port of my original spotifystarfield.com visualization",
 		gpu: "webgpu",
+		rating: 5,
 	},
 	does: (masterCanvas, signal) => {
 		// test different sizes for debugging

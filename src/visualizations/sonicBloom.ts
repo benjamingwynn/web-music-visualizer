@@ -6,6 +6,7 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 		author: "Gemini 2.5 flash",
 		description:
 			"An organic visualization where abstract flora blossoms and reacts to the music's rhythm, dynamics, and energy shifts. Watch as vibrant petals unfurl and contract, their size and color dictated by the song's energy spectrum and overall loudness.",
+		rating: 4,
 	},
 	does: (canvas) => {
 		const ctx = canvas.getContext("2d")
@@ -23,7 +24,7 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 		}
 
 		// Configuration constants for the visualization
-		const maxBlooms = 60 // Maximum number of active blooms on screen
+		const maxBlooms = 120 // Maximum number of active blooms on screen
 		const bloomDecayRate = 0.0008 // How fast blooms shrink/fade over time
 		const initialBloomSize = 0.005 // Starting size of a newly spawned bloom
 		const maxBloomScale = 0.15 // Maximum bloom size relative to canvas dimension
@@ -148,7 +149,7 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 				ctx.bezierCurveTo(-scaledSize * 0.7, scaledSize * 1.5, -scaledSize * 0.3, scaledSize * 0.5, 0, 0)
 				ctx.closePath()
 				ctx.fill()
-				ctx.stroke()
+				//ctx.stroke()
 
 				ctx.restore()
 			}
@@ -209,7 +210,7 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 				if (music.changed.beat && music.beat.current) {
 					const beatLoudness = music.beat.current.perceivedLoudness
 					// Spawn more blooms for louder beats
-					const numNewBlooms = Math.ceil(lerp(1, 4, beatLoudness))
+					const numNewBlooms = Math.ceil(lerp(1, 8, beatLoudness))
 					for (let i = 0; i < numNewBlooms; i++) {
 						const angle = rand(0, Math.PI * 2)
 						const radius = rand(0.01, bloomSpawnRadius)
