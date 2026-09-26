@@ -1,3 +1,38 @@
+# web-music-visualizer
+
+an in-browser music visualization experiment mostly developed around 2023
+
+entirely locally processes music and plays it with programmatic visuals, like Windows Media Player or Milkdrop but in the browser and with code you can mess with
+
+note that the user interface was never finished for this project, so things may be a bit rough around the edges
+
+this is powered by my [musIQ](https://github.com/benjamingwynn/musIQ) library
+
+live demo available at https://musiq-testing.netlify.app/
+
+this does not do any external communication, once you've opened the webpage and musiq's models have been loaded onto your machine, that's it. there is no server, no telemetry, no tracking.
+
+### instructions
+
+the program contains a list of music visualizations ready to use, simply add your music and pick a visualization and the visuals _should_ move _vaguely_ in sync with the music
+
+Chrome works best
+
+you can open the code of the visualization by pressing the "c" button on your keyboard. you can entirely change the visual like this, and experiment with the rest of the code, or even add an entire new visual
+
+the "dots and lines" provided visualization is recreation of [spotify starfield](https://github.com/benjamingwynn/spotifystarfield.com) in WebGPU and is in my opinion the strongest one, this being the effective spiritual successor to that project. other examples are provided by me and some AIs, with mixed results
+
+other key binds:
+- `k` play/pause
+- `j` previous track
+- `l` next track
+- `n` next visualization
+- `p` previous visualization
+- `o` open the file picker
+- `f` toggle fullscreen
+
+### building
+
 - npm i
 - npm run build-monaco-workers
 - npm start (OR) npm run build
