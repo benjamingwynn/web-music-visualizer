@@ -1,5 +1,11 @@
 import {MusicCanvas} from "../audio/canvas.ts"
 
+/** using a 0-1 float picks from the defined range */
+function lerp(min: number, max: number, inputZeroToOne: number) {
+	const delta = max - min
+	return min + inputZeroToOne * delta
+}
+
 /** util function for hue and saturation to [r,g,b] */
 function hueSaturationToRGB(hue: number, saturation: number) {
 	// clamp
@@ -18,8 +24,6 @@ function hueSaturationToRGB(hue: number, saturation: number) {
 	const r0 = channel(0)
 	const g0 = channel(4)
 	const b0 = channel(2)
-
-	const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 	const r = lerp(1, r0, saturation)
 	const g = lerp(1, g0, saturation)
@@ -275,12 +279,13 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 		const nRoots = 900
 		const nTargets = 700
 
-		const smoothness = 0.9
+		let smoothness = 0.9
 
 		let roots = new Float32Array(randomPositions(nRoots))
 		let targets = new Float32Array(randomPositions(nTargets))
 		let colors = new Float32Array(makeColors(nTargets))
 		const targetVelocities = new Float32Array(nTargets)
+		const rootVelocities = new Float32Array(nRoots)
 		/**
 		 * 1: north-west (top-left)
 		 * 2: north (top)
@@ -341,6 +346,8 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 		let debug3: string = "debug"
 		let debug4: string = "debug"
 		let debug5: string = "debug"
+		let debug6: string = "debug"
+		let debug7: string = "debug"
 		// let debug: string = []
 
 		let WORLD_SPEED = 0.0001
@@ -449,6 +456,7 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 				"regrowth: " + outOfRangeTargets.size + " waiting",
 				"warp    : " + warpEffectEnabled + " / " + warpEffectChangeSpeed + " / " + warpEffectSpeedTarget + " / " + warpEffectSpeedActual,
 				"rotate  : " + rotateSpeedTarget + " / " + rotateChangeSpeed + " / " + rotateSpeedActual,
+				"float   : " + floatSpeed,
 				"",
 				debug0,
 				debug1,
@@ -456,6 +464,8 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 				debug3,
 				debug4,
 				debug5,
+				debug6,
+				debug7,
 			]
 			// debug3=''
 
@@ -856,6 +866,13 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 				roots[i + 0] += deltaX * (WORLD_SPEED * floatSpeed) * frameScale
 				roots[i + 1] += deltaY * (WORLD_SPEED * floatSpeed) * frameScale
 
+				if (rootVelocities[vI] > 0) {
+					const v = rootVelocities[vI]
+					rootVelocities[vI] = v * velocityDecay
+					targets[i + 0] += deltaX * v * impulseScale
+					targets[i + 1] += deltaY * v * impulseScale
+				}
+
 				// const backToCenter = () => {
 				// 	roots[i + 0] = 0.5
 				// 	roots[i + 1] = 0.5
@@ -1048,7 +1065,29 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 						debug2 = "no warp reason"
 					}
 
+					if (music.changed.section && (music.section.current?.confidence ?? 0) > 0.4) {
+						const c = music.section.current?.confidence ?? 1
+						const c2 = (music.section.current?.bpm.min ?? 120) / 120
+						const rV = 0.004 * c * c2
+						for (let i = 0; i < rootVelocities.length; i++) {
+							rootVelocities[i] = rV
+						}
+						const tV = 0.004 * c2
+						// for (let i = 0; i < targetVelocities.length; i++) {
+						// 	targetVelocities[i] = tV
+						// }
+						debug6 = "section change! c=" + c + " c2=" + c2 + ". rV=" + rV + ". tV=" + tV
+
+						// smoothness = s
+					}
 					debug4 += " beat confidence = " + music.beat.current?.confidence + ". beat loudness = " + music.beat.current?.perceivedLoudness + " avg section loudness = " + music.section.current?.perceivedLoudness.avg
+
+					const smoothBpm = music.section?.current?.bpm.min ?? 0
+					const smoothLoud = music.section.current?.perceivedLoudness.min ?? 0
+					const bpmRatio = Math.min(1, smoothBpm / 120)
+					const val = 1 - bpmRatio * smoothLoud
+					smoothness = lerp(0.88, 0.99, val)
+					debug7 = "[smooth] bpm: " + smoothBpm + " (r: " + bpmRatio + "). loud: " + smoothLoud + ". val:" + val + ". smoothness: " + smoothness
 				} else {
 					warpEffectSpeedTarget = 0
 					rotateSpeedTarget = 0
