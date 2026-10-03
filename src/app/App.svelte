@@ -17,7 +17,7 @@
 		"/visualizations/needles.ts",
 		"/visualizations/particleSymphony.ts",
 		"/visualizations/ps1.ts",
-		"/visualizations/resonantShards.ts",
+		"/visualizations/livingDotsAndLines.ts",
 		"/visualizations/sonicBloom.ts",
 		"/visualizations/vortex.ts",
 	]
