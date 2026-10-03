@@ -3,6 +3,7 @@
 	import {MusicCanvas} from "../audio/canvas.ts"
 	import Options from "./Options.svelte"
 	import Queue from "./Queue.svelte"
+	import MusicLibrary from "./MusicLibrary.svelte"
 	import type {Analysis} from "musiq"
 	import {writable} from "svelte/store"
 	import QueueItem from "./QueueItem.svelte"
@@ -174,6 +175,8 @@
 	</div>
 
 	<!-- <p>editor is focused? {$editorFocused}</p> -->
+
+	<MusicLibrary />
 
 	<Queue {musicCanvas} {onSelect} {onAnalysis} {onAddToQueue} bind:next={nextSong} bind:previous={prevSong} bind:openFilePicker />
 

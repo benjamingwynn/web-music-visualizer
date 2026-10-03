@@ -2,6 +2,7 @@
 	"links": {
 		"/musiq": "./node_modules/musiq",
 		"/monaco": "./.monaco",
-		"/visualizations": "./src/visualizations"
-	}
+		"/visualizations": "./src/visualizations",
+		"/img": "./img",
+	},
 }
