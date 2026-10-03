@@ -16,16 +16,13 @@
 
 	//
 	const shift = (delta: number) => {
-		let i = $all.findIndex(([x]) => x === $selectedId)
-		if (i === 0) i = 1
-		const n = $all[i + delta]
-		if (i + delta == -1) {
-			musicCanvas.startVisualization($all.at(-1)?.[0] as any)
-		} else if (n) {
-			musicCanvas.startVisualization(n[0])
-		} else {
-			musicCanvas.startVisualization($all[1][0])
-		}
+		const currentIndex = $all.findIndex(([x]) => x === $selectedId)
+		const targetIndex = currentIndex + delta
+		const first = $all[0]
+		const last = $all.at(-1)
+		const selectTarget = $all[targetIndex] ?? (delta > 0 ? first : last)
+		const selectedTargetId = selectTarget[0]
+		musicCanvas.startVisualization(selectedTargetId)
 	}
 	const next = () => shift(+1)
 	const prev = () => shift(-1)
