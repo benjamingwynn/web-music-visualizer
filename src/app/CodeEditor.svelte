@@ -1,11 +1,14 @@
 <script lang="ts">
-	import types from "./CodeEditorTypes.txt"
-	// import defaultText from "./CodeEditorDefault.txt"
 	import * as monaco from "monaco-editor"
 	import {onMount, getContext} from "svelte"
 	import type {Writable} from "svelte/store"
 	import tsBlankSpace from "ts-blank-space"
 	import Window from "./Window.svelte"
+
+	// todo: this is actually quite difficult/complicated, we need to extract just the relevant types for doing MusicCanvas.register and pop them in here:
+	const EXTRA_TYPES = `
+		// ...
+	`
 
 	const editorFocused = getContext<Writable<boolean>>("editorFocused")
 
@@ -34,6 +37,12 @@
 	}
 
 	function doEval(runtimeCode: string) {
+		// lazy filter to not include import in eval, so we can copy/paste between real source easier
+		runtimeCode = runtimeCode
+			.split("\n")
+			.filter((ln) => (ln.trim().startsWith("import ") ? false : true))
+			.join("\n")
+
 		console.log("evaluating...", {runtimeCode})
 		try {
 			window._evalUrl = url
@@ -106,10 +115,10 @@
 			})
 
 			// extra libraries
-			var libSource = types
-			// console.log(types)
+			var libSource = EXTRA_TYPES
+			console.log("types:", libSource)
 			// var libSource = ["declare class Facts {", "    /**", "     * Returns the next fact", "     */", "    static next():string", "}"].join("\n")
-			var libUri = "ts:filename/myLib.d.ts"
+			var libUri = "ts:system.d.ts"
 			monaco.languages.typescript.javascriptDefaults.addExtraLib(libSource, libUri)
 			// When resolving definitions and references, the editor will try to use created models.
 			// Creating a model for the library allows "peek definition/references" commands to work with the library.

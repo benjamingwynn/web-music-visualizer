@@ -13,7 +13,7 @@
 	{#await f.text()}
 		<LoadingCodeSpinner />
 	{:then code}
-		{@const code2 = code.replace(/import .*/g, "")}
-		<CodeEditor {url} title={url} code={(d ? "" : "// Error - ") + code2} {hidden}></CodeEditor>
+		<!-- {@const code2 = code.replace(/import .*/g, "")} -->
+		<CodeEditor {url} title={url} code={(d ? "" : "// Error - ") + code} {hidden}></CodeEditor>
 	{/await}
 {/await}
