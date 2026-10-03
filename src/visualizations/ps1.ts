@@ -1,5 +1,3 @@
-import {MusicCanvas} from "../audio/canvas.ts"
-
 MusicCanvas.registerVisualization("ps1", {
 	info: {
 		name: "80s Shape Emulator",
@@ -142,7 +140,7 @@ MusicCanvas.registerVisualization("ps1", {
 				}
 			}
 
-			if (music?.changed.beat && music.section.current && music.beat.current?.perceivedLoudness) {
+			if (music?.changed.beat && music.section.current && music.beat.current?.perceivedLoudness && music.beat.current.confidence > 0.25) {
 				const makes = music.beat.current?.perceivedLoudness * 10
 
 				// determine the hue

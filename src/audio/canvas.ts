@@ -2,6 +2,7 @@ import type {Analysis, DetectedBeat, DetectedSection, DetectedSegment, PositionE
 import {createAudioTracker, type AudioTracker, type AudioTrackerContext} from "./tracker.ts"
 export {type AudioTrackerContext}
 import {writable} from "svelte/store"
+import packageJson from "../../package.json" with {type: "json"}
 export type {DetectedBeat, DetectedSection, DetectedSegment, PositionEstimate}
 //
 
@@ -155,17 +156,16 @@ MusicCanvas.registerVisualization("debug", {
 		return (dT, music) => {
 			// draw stuff here
 			ctx.clearRect(0, 0, canvas.width, canvas.height)
-			ctx.fillStyle = "royalblue"
+			ctx.fillStyle = "darkorange"
 
 			const cX = canvas.width / 2
 			const cY = canvas.height / 3
 
-			const s1 = Math.floor(canvas.width * 0.1)
+			const s1 = Math.floor(canvas.height * 0.1)
 			{
 				const s = s1
 				ctx.font = s + "px monospace"
-				// todo: pull from project package json
-				const t = "v2603"
+				const t = "v" + packageJson.version.split(".").at(-1)
 				const w = ctx.measureText(t)
 				ctx.fillText(t, cX - w.width / 2, cY + w.fontBoundingBoxDescent)
 			}

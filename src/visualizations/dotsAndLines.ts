@@ -1,7 +1,3 @@
-/** @format */
-
-import {MusicCanvas} from "../audio/canvas.ts"
-
 /** util function for hue and saturation to [r,g,b] */
 function hueSaturationToRGB(hue: number, saturation: number) {
 	// clamp
@@ -316,7 +312,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		])
 
 		let targetRadius: number = MAX_RADIUS
-		let radiusChangeSpeed = 0.00002
+		let radiusChangeSpeed = 0.00005
 		/** 0-1 */
 		function setRadius(radius: number) {
 			targetRadius = Math.max(MIN_RADIUS, Math.min(1, radius) * MAX_RADIUS)
@@ -1016,15 +1012,15 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 				useOutOfRangeTargets = Boolean(music?.section.current) || warpEffectEnabled
 				if (music) {
-					if (warpEffectEnabled) {
-						if (music.changed.tatum && music.tatum.current && music.segment.current) {
-							onBeat(music.tatum.current?.confidence * 0.5 * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
-						}
-					} else {
-						if (music.changed.beat && music.beat.current && music.segment.current) {
-							onBeat(music.beat.current?.perceivedLoudness * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
-						}
+					// if (warpEffectEnabled) {
+					// 	if (music.changed.tatum && music.tatum.current && music.segment.current) {
+					// 		onBeat(music.tatum.current?.confidence * 0.5 * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
+					// 	}
+					// } else {
+					if (music.changed.beat && music.beat.current && music.segment.current) {
+						onBeat(music.beat.current?.perceivedLoudness * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
 					}
+					// }
 					debug4 = "loudness:" + music.segment.current?.perceivedLoudness
 
 					if (music.section.current && music.segment.current && (music.changed.section || !possibleNewColors.length)) {
@@ -1058,8 +1054,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 					let warpReason = null
 					if (music.section.current) {
-						if (music.section.current.perceivedLoudness.min < 0.03) warpReason = "perceivedLoudness.min < 0.03"
-						if (music.section.current.perceivedLoudness.avg < 0.25) warpReason = "perceivedLoudness.avg < 0.25"
+						if (music.section.current.perceivedLoudness.min < 0.05) warpReason = "perceivedLoudness.min < 0.05"
+						if (music.section.current.perceivedLoudness.avg < 0.55) warpReason = "perceivedLoudness.avg < 0.55"
 						if (music.section.current.bpm.avg < 90) warpReason = "bpm.avg < 0.25"
 						debug3 = "perceivedLoudness.min=" + music.section.current.perceivedLoudness.avg
 
@@ -1078,6 +1074,14 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						warpEffectSpeedTarget = 0
 						debug2 = "no warp reason"
 					}
+
+					debug4 +=
+						" beat confidence = " +
+						music.beat.current?.confidence +
+						". beat loudness = " +
+						music.beat.current?.perceivedLoudness +
+						" avg section loudness = " +
+						music.section.current?.perceivedLoudness.avg
 				} else {
 					warpEffectSpeedTarget = 0
 					rotateSpeedTarget = 0
