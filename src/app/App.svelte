@@ -20,6 +20,8 @@
 		"/visualizations/livingDotsAndLines.ts",
 		"/visualizations/sonicBloom.ts",
 		"/visualizations/vortex.ts",
+		"/visualizations/chart.ts",
+		"/visualizations/debug.ts",
 	]
 
 	const editorFocused = writable(false)
