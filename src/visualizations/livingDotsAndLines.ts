@@ -340,6 +340,7 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 		let debug2: string = "debug"
 		let debug3: string = "debug"
 		let debug4: string = "debug"
+		let debug5: string = "debug"
 		// let debug: string = []
 
 		let WORLD_SPEED = 0.0001
@@ -351,8 +352,6 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 			targetLifetimes[i] = 24000 + Math.random() * 24000
 			targetAges[i] = Math.random() * targetLifetimes[i]
 		}
-		let growthEnergy = 0.25
-		let growthEnergyTarget = 0.25
 		let birthBudget = 0
 		const outOfRangeTargets = new Set<number>()
 
@@ -447,7 +446,7 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 				" cp out : " + msCopyOut + "ms",
 				"mem in  : " + ((roots.byteLength + targets.byteLength) / 1024).toFixed(2) + "k",
 				"options : " + options,
-				"regrowth: " + outOfRangeTargets.size + " waiting / energy " + growthEnergy.toFixed(2),
+				"regrowth: " + outOfRangeTargets.size + " waiting",
 				"warp    : " + warpEffectEnabled + " / " + warpEffectChangeSpeed + " / " + warpEffectSpeedTarget + " / " + warpEffectSpeedActual,
 				"rotate  : " + rotateSpeedTarget + " / " + rotateChangeSpeed + " / " + rotateSpeedActual,
 				"",
@@ -456,6 +455,7 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 				debug2,
 				debug3,
 				debug4,
+				debug5,
 			]
 			// debug3=''
 
@@ -488,7 +488,7 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 		}
 
 		function resize(ctx: GPUCanvasContext) {
-			debug1 = ctx.canvas.height + "x" + ctx.canvas.width
+			// debug1 = ctx.canvas.height + "x" + ctx.canvas.width
 			// set ratio
 			options[0] = ctx.canvas.height / ctx.canvas.width
 			const canvasSize = ctx.canvas.height * ctx.canvas.width
@@ -791,7 +791,6 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 			const frameScale = dT / (1000 / 60)
 			const velocityDecay = Math.pow(smoothness, frameScale)
 			const impulseScale = (1 - velocityDecay) / (1 - smoothness)
-			growthEnergy += (growthEnergyTarget - growthEnergy) * (1 - Math.exp(-dT / 2500))
 			// angle+= dT * 0.0001
 			rotatePoints(roots, 0.00005 * dT * rotateSpeedActual, options[0])
 			rotatePoints(targets, 0.00005 * dT * rotateSpeedActual, options[0])
@@ -931,32 +930,22 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 			})
 		let possibleNewColors: [number, number, number, number][] = []
 
-		function regrow(dT: number) {
-			// A continuous, capped rate avoids an entire cloud respawning on one beat.
-			birthBudget = Math.min(3, birthBudget + ((12 + 50 * growthEnergy) * dT) / 1000)
+		function regrow(dT: number, birthBudget: number) {
 			for (const index of outOfRangeTargets) {
 				if (birthBudget < 1) break
 				birthBudget--
 				const xy = index * 2
 				let parent = -1
-				// if (Math.random() < 0.75) {
-				// Bounded sampling keeps regrowth O(n), even when nearly all targets are dormant.
-				for (let attempt = 0; attempt < 12; attempt++) {
-					const candidate = Math.floor(Math.random() * nTargets)
-					if (
-						candidate !== index &&
-						!outOfRangeTargets.has(candidate) &&
-						colors[candidate * 4 + 3] > 0.6 &&
-						targets[candidate * 2] > 0.08 &&
-						targets[candidate * 2] < 0.92 &&
-						targets[candidate * 2 + 1] > 0.08 &&
-						targets[candidate * 2 + 1] < 0.92
-					) {
-						parent = candidate
-						break
+				if (Math.random() < 0.75) {
+					// Bounded sampling keeps regrowth O(n), even when nearly all targets are dormant.
+					for (let attempt = 0; attempt < 12; attempt++) {
+						const candidate = Math.floor(Math.random() * nTargets)
+						if (candidate !== index && !outOfRangeTargets.has(candidate) && colors[candidate * 4 + 3] > 0.6 && targets[candidate * 2] > 0.08 && targets[candidate * 2] < 0.92 && targets[candidate * 2 + 1] > 0.08 && targets[candidate * 2 + 1] < 0.92) {
+							parent = candidate
+							break
+						}
 					}
 				}
-				// }
 				const root = Math.floor(Math.random() * nRoots)
 				const direction = parent >= 0 ? targetDirections[parent] : rootDirections[root]
 				// Inherit a heading with a little divergence, so neighbours drift together then separate.
@@ -1000,6 +989,9 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 					// 		onBeat(music.tatum.current?.confidence * 0.5 * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
 					// 	}
 					// } else {
+					if (music.changed.tatum && music.tatum.current) {
+						debug1 = "tatum: " + JSON.stringify(music.tatum.current)
+					}
 					if (music.changed.beat && music.beat.current && music.segment.current) {
 						const beatStrength = music.beat.current?.perceivedLoudness * music.beat.current?.confidence
 						debug3 = "beat: " + beatStrength + `. l: ${music.beat.current?.perceivedLoudness}. c: ${music.beat.current?.confidence}.`
@@ -1008,8 +1000,8 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 					// }
 					debug4 = "loudness:" + music.segment.current?.perceivedLoudness
 
-					floatSpeed = music?.section?.current?.bpm?.avg / 90
-					debug4 += " float: " + floatSpeed + ". section bpm avg: " + music?.section?.current?.bpm.avg
+					floatSpeed = (music?.section?.current?.bpm?.avg ?? 90) / 90
+					debug4 += " float: " + floatSpeed + ". section bpm avg: " + music.section.current?.bpm.avg
 					if (music.section.current && music.segment.current && (music.changed.section || !possibleNewColors.length)) {
 						const candidates: [number, number, number, number][] = []
 						for (let i = 0; i < music.section.current.keys.length; i++) {
@@ -1056,23 +1048,19 @@ MusicCanvas.registerVisualization("livingDotsAndLines", {
 						debug2 = "no warp reason"
 					}
 
-					debug4 +=
-						" beat confidence = " +
-						music.beat.current?.confidence +
-						". beat loudness = " +
-						music.beat.current?.perceivedLoudness +
-						" avg section loudness = " +
-						music.section.current?.perceivedLoudness.avg
+					debug4 += " beat confidence = " + music.beat.current?.confidence + ". beat loudness = " + music.beat.current?.perceivedLoudness + " avg section loudness = " + music.section.current?.perceivedLoudness.avg
 				} else {
 					warpEffectSpeedTarget = 0
 					rotateSpeedTarget = 0
 					setRadius(0.5)
 				}
 
-				growthEnergyTarget = Math.max(0, Math.min(1, music?.segment.current?.perceivedLoudness ?? 0.25))
 				const msPhysicsStart = performance.now()
 				physics(dT)
-				regrow(dT)
+				// tweak this!
+				const birth = music?.changed.tatum ? Math.ceil(outOfRangeTargets.size * 0.5 * (music?.tatum.current?.confidence ?? 0.5)) : 0
+				if (birth) debug5 = "dead: " + outOfRangeTargets.size + ". confidence " + music?.tatum.current?.confidence + ". birthed: " + birth
+				regrow(dT, birth)
 				msPhysics = performance.now() - msPhysicsStart
 				render()
 			}
