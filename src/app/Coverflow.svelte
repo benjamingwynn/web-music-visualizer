@@ -16,14 +16,32 @@
 	let scrollContainer: Element
 	let scrollPosition = 0
 
+	let horizontalScrolling = false
+	let zooming = false
+	let scrollEndTimer: number
+
 	$: albumsPerPage = (scrollContainer?.clientWidth ?? 0) / albumSize
 	$: selectedIndex = Math.floor(scrollPosition / albumSize)
 	$: startIndex = selectedIndex - Math.floor(albumsPerPage / 2)
 	$: endIndex = selectedIndex + Math.floor(albumsPerPage / 2)
 
+	function handleScroll() {
+		scrollPosition = scrollContainer.scrollLeft
+
+		if (zooming) return
+
+		horizontalScrolling = true
+
+		clearTimeout(scrollEndTimer)
+		scrollEndTimer = window.setTimeout(() => {
+			horizontalScrolling = false
+		}, 120)
+	}
+
 	async function handleZoom(ev: WheelEvent) {
 		if (!ev.ctrlKey) return // only pinch, not normal scroll
 		ev.preventDefault()
+		if (horizontalScrolling) return
 
 		const nextScale = Math.min(Math.max(scale - ev.deltaY * 0.01, 0.5), 2)
 		if (nextScale === scale) return
@@ -34,24 +52,23 @@
 
 		const logicalX = (scrollContainer.scrollLeft + pointerX - spacer) / albumSize
 
+		zooming = true
 		scale = nextScale
 
 		// wait for the new album size / scroll width to be laid out..
 		await tick()
 
-		//...keep the same logical point beneath the cursor/fingers with math
+		// ...keep the same logical point beneath the cursor/fingers with math
 		scrollContainer.scrollLeft = spacer + logicalX * albumSize - pointerX
+
+		// allow the scroll event caused by the zoom correction to finish first
+		requestAnimationFrame(() => {
+			zooming = false
+		})
 	}
 </script>
 
-<div
-	bind:this={scrollContainer}
-	class="outer"
-	on:wheel={handleZoom}
-	on:scroll={(ev) => {
-		scrollPosition = scrollContainer?.scrollLeft
-	}}
->
+<div bind:this={scrollContainer} class="outer" on:wheel={handleZoom} on:scroll={handleScroll}>
 	<div class="coverflow">
 		{#each Object.values($albums) as album, index}
 			<!-- kinda a hack but just find the first song -->
@@ -79,6 +96,7 @@
 		{/each}
 	</div>
 </div>
+
 <h1>{startIndex}, {endIndex}, {selectedIndex}, {scrollPosition}</h1>
 
 <style>
@@ -90,6 +108,7 @@
 		align-self: stretch;
 		background: radial-gradient(black 30%, transparent);
 	}
+
 	.coverflow::before,
 	.coverflow::after {
 		content: "";
