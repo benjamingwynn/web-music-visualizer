@@ -4,11 +4,14 @@
 	import {loadMusiq} from "../audio/musiq.ts"
 	import {pQueue} from "./pQueue.ts"
 	import QueueItem from "./QueueItem.svelte"
+	import Button from "./Button.svelte"
+	import {showLibrary} from "./state.ts"
 
 	export let musicCanvas: MusicCanvas
 	export let onSelect: (file: File) => Promise<void>
 	export let onAnalysis: (analysis: Analysis) => Promise<void>
 	export let onAddToQueue: () => void
+	export let pleaseStopAudio: () => void
 
 	let selected: File | null = null
 	let queue: File[] = []
@@ -52,10 +55,9 @@
 		await onFiles(files)
 	}
 
-	const onFiles = async (files: File[]) => {
+	export const onFiles = async (files: File[]) => {
 		for (const file of files) {
 			const fn = async () => {
-				// todo: do we wanna queue?
 				return analysisQueue(async () => {
 					processing = [...processing, file]
 					// we gotta wait for the analyzer
@@ -79,6 +81,9 @@
 		}
 		queue = [...queue, ...files]
 		onAddToQueue()
+	}
+	export const pleaseQueueMusic = (files: File[]) => {
+		onFiles(files)
 	}
 
 	const shiftPosition = (delta: number) => {
@@ -120,6 +125,23 @@
 		></QueueItem>
 	{/each}
 </div>
+
+<Button
+	onClick={async () => {
+		$showLibrary = true
+	}}>open library</Button
+>
+
+<Button
+	onClick={async () => {
+		// todo: this is buggy and doesn't work properly - refactor to make this work better
+		pleaseStopAudio()
+		queue = []
+		ready = []
+		processing = []
+		selected = null
+	}}>clear queue</Button
+>
 
 <input type="file" on:change={onchange} multiple bind:this={picker} />
 

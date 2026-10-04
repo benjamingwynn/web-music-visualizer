@@ -1,5 +1,5 @@
 <script lang="ts">
-	export let onClick: () => Promise<void>
+	export let onClick: () => void | Promise<void>
 	export let disabled = false
 	let lock = false
 </script>
@@ -9,7 +9,7 @@
 	type="button"
 	on:click={() => {
 		lock = true
-		onClick().finally(() => {
+		onClick()?.finally(() => {
 			lock = false
 		})
 	}}><slot /></button
@@ -19,5 +19,6 @@
 	button {
 		background: #333;
 		color: white;
+		font-size: 1.2em;
 	}
 </style>

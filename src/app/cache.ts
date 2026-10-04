@@ -1,7 +1,7 @@
 import {persistentStore} from "./persistentStore.ts"
 
 /** debug option to entirely disable caching */
-const DISABLE_CACHING = true
+const DISABLE_CACHING = false
 
 const cacheCache: Map<string, any> = new Map()
 

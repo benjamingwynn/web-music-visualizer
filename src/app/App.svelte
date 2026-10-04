@@ -6,6 +6,7 @@
 	import MusicLibrary from "./MusicLibrary.svelte"
 	import type {Analysis} from "musiq"
 	import {writable} from "svelte/store"
+	import {showLibrary} from "./state.ts"
 	import QueueItem from "./QueueItem.svelte"
 	import NotChromeWarning from "./NotChromeWarning.svelte"
 	import CodeEditor from "./CodeEditor.svelte"
@@ -58,6 +59,7 @@
 	let nextSong: () => void
 	let prevSong: () => void
 	let openFilePicker: () => void
+	let pleaseQueueMusic: () => void
 	onMount(() => {
 		canvas.height = window.innerHeight * renderScale
 		canvas.width = window.innerWidth * renderScale
@@ -76,6 +78,11 @@
 		const url = URL.createObjectURL(file)
 		audio.src = url
 		audio.play()
+	}
+
+	async function pleaseStopAudio() {
+		audio.pause()
+		audio.src = ""
 	}
 
 	function onAddToQueue() {
@@ -153,6 +160,11 @@
 			}
 			return
 		}
+
+		if (ev.key === "Escape") {
+			$showLibrary = !$showLibrary
+			return
+		}
 	}
 </script>
 
@@ -176,9 +188,9 @@
 
 	<!-- <p>editor is focused? {$editorFocused}</p> -->
 
-	<MusicLibrary />
+	<MusicLibrary {pleaseQueueMusic} />
 
-	<Queue {musicCanvas} {onSelect} {onAnalysis} {onAddToQueue} bind:next={nextSong} bind:previous={prevSong} bind:openFilePicker />
+	<Queue {musicCanvas} {onSelect} {onAnalysis} {onAddToQueue} bind:next={nextSong} bind:previous={prevSong} bind:openFilePicker bind:pleaseQueueMusic {pleaseStopAudio} />
 
 	<Options {musicCanvas} />
 </main>

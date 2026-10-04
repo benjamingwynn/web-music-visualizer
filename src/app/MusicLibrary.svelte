@@ -1,37 +1,63 @@
 <script lang="ts">
 	import Button from "./Button.svelte"
+	import Coverflow from "./Coverflow.svelte"
 	import {clearAllMetadata, openMusicCollection, type MusicCollection} from "./musicCollection"
 	import MusicLibraryItem from "./MusicLibraryItem.svelte"
+	import {showLibrary} from "./state"
 
-	let library: undefined | MusicCollection = undefined
+	export let pleaseQueueMusic: (files: File[]) => void
+	let collection: undefined | MusicCollection = undefined
+
+	let mode: "songs" | "albums" = "albums"
 </script>
 
-<main>
-	<h1>this is the music library!</h1>
-
-	{#if "showDirectoryPicker" in window}
-		<Button
-			onClick={async () => {
-				library = await openMusicCollection()
-			}}>select music directory</Button
-		>
-		<Button
-			onClick={async () => {
-				await clearAllMetadata()
-			}}>clear all metadata</Button
-		>
+<main hidden={!$showLibrary}>
+	{#if !collection}
+		{#if "showDirectoryPicker" in window}
+			<Button
+				onClick={async () => {
+					collection = await openMusicCollection()
+				}}>select music directory</Button
+			>
+			<Button
+				onClick={async () => {
+					await clearAllMetadata()
+					collection = await openMusicCollection()
+				}}>select music directory (clear cache)</Button
+			>
+		{:else}
+			<h2>your browser is not supported</h2>
+		{/if}
 	{:else}
-		<h2>your browser is not supported</h2>
-	{/if}
-
-	{#if library}
-		<h1>library loaded</h1>
-		<div class="list song-list">
-			{#each library.songs as song}
-				<MusicLibraryItem metadata={song.meta}></MusicLibraryItem>
-			{/each}
+		<div>
+			<Button
+				onClick={() => {
+					mode = "songs"
+				}}>songs</Button
+			>
+			<Button
+				onClick={() => {
+					mode = "albums"
+				}}>albums</Button
+			>
 		</div>
+		{#if mode === "songs"}
+			<div class="list song-list">
+				{#each collection.songs as song}
+					<MusicLibraryItem {pleaseQueueMusic} handle={song.file} metadata={song.meta}></MusicLibraryItem>
+				{/each}
+			</div>
+		{:else if mode === "albums"}
+			<Coverflow {collection} {pleaseQueueMusic}></Coverflow>
+		{/if}
 	{/if}
+	<div>
+		<Button
+			onClick={async () => {
+				$showLibrary = false
+			}}>close library</Button
+		>
+	</div>
 </main>
 
 <style>
@@ -45,6 +71,16 @@
 		backdrop-filter: blur(10px);
 		background-color: rgba(0, 0, 0, 0.4);
 		display: grid;
+		visibility: visible;
+		transition: all 0.35s;
+		align-content: baseline;
+		grid-template-rows: auto auto 1fr;
+	}
+
+	main[hidden] {
+		visibility: hidden;
+		opacity: 0;
+		transform: scale(1.1);
 	}
 
 	.song-list {
