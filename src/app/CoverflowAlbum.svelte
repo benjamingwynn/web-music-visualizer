@@ -15,6 +15,7 @@
 	export let trackList: Song[]
 	export let onClick: (isSelected: boolean, alt: boolean) => Promise<void>
 	export let size: number
+	export let zooming: boolean
 
 	$: pitchAmount = size * 0.1
 
@@ -81,7 +82,7 @@
 	}}
 >
 	{#if inRenderRange}
-		<div class="art" style:transform={matrix}>
+		<div class="art" style:transform={matrix} class:animate={!zooming}>
 			<img alt="artwork" src={artwork} />
 			<img class="reflection" alt="" aria-hidden="true" src={artwork} />
 		</div>
@@ -128,6 +129,9 @@
 		height: var(--size);
 		width: var(--size);
 		transform-origin: 0 0;
+	}
+
+	.art.animate {
 		transition: transform 0.3s;
 	}
 

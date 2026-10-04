@@ -28,7 +28,7 @@
 
 	$: selectedKey = (scrollContainer?.querySelector(`div[data-index="${selectedIndex}"]`) as HTMLElement | undefined)?.dataset.key
 	afterUpdate(() => {
-		if (selectedKey && !horizontalScrolling) {
+		if (selectedKey) {
 			// try to fix scroll pos when adding things before/after
 			// (sadly this doesn't work for when we're actually scrolling so just disable when we are scrolling)
 			const e = scrollContainer.querySelector(`div[data-key="${selectedKey}"]`)
@@ -94,6 +94,7 @@
 						{startIndex}
 						{endIndex}
 						{selectedIndex}
+						{zooming}
 						trackList={album}
 						onClick={async (isSelected, alt) => {
 							if (isSelected) {
@@ -103,7 +104,7 @@
 								}
 								pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
 							} else {
-								const left = index * albumSize
+								const left = index * albumSize + albumSize / 2
 								scrollContainer.scrollTo({behavior: "smooth", left})
 							}
 						}}
