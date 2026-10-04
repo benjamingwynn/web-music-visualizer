@@ -20,7 +20,6 @@ export type Song = {
 }
 
 export type MusicCollection = {
-	update: Writable<number>
 	albums: Writable<Record<string, Song[]>>
 	songs: Song[]
 	// artists: Record<string, MusicEntry[]>
@@ -82,7 +81,6 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 	console.log(rootDir)
 
 	let u = 0
-	const update = writable(u)
 	const songs: Song[] = []
 	const walking: Promise<void>[] = []
 	const _albums = {} as Record<string, Song[]>
@@ -124,8 +122,6 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 						defaultSong,
 						metaQueue(() => getMetadataFor(path, val, albumArtwork ? {albumArtwork} : undefined)),
 						(m) => {
-							update.set(u++)
-
 							// this all seems a bit hacky?
 							_albums[m.albumName] = _albums[m.albumName] ?? []
 							if (_albums[m.albumName][m.track]) {
@@ -154,7 +150,6 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 	await Promise.allSettled(walking)
 
 	const collection: MusicCollection = {
-		update,
 		albums,
 		songs,
 	}

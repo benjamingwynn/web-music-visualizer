@@ -22,52 +22,49 @@
 	$: endIndex = selectedIndex + Math.floor(albumsPerPage / 2)
 </script>
 
-{#key update}
-	<h1>{Date.now()}</h1>
-	<div
-		bind:this={scrollContainer}
-		class="outer"
-		on:wheel={(ev) => {
-			if (!ev.ctrlKey) return // only pinch, not normal scroll
-			ev.preventDefault()
+<div
+	bind:this={scrollContainer}
+	class="outer"
+	on:wheel={(ev) => {
+		if (!ev.ctrlKey) return // only pinch, not normal scroll
+		ev.preventDefault()
 
-			scale -= ev.deltaY * 0.01 // pinch out = positive scale change
-			scale = Math.min(Math.max(scale, 0.5), 2) // clamp
-		}}
-		on:scroll={(ev) => {
-			// console.log(ev, scrollContainer.scrollLeft, scrollContainer.clientWidth)
-			scrollPosition = scrollContainer?.scrollLeft
-		}}
-	>
-		<div class="coverflow">
-			{#each Object.values($albums) as album, index}
-				<!-- kinda a hack but just find the first song -->
-				{@const song = album.find((x) => x)}
-				{#if song}
-					<CoverflowAlbum
-						size={albumSize}
-						meta={song.meta}
-						{index}
-						{startIndex}
-						{endIndex}
-						{selectedIndex}
-						trackList={album}
-						onClick={async () => {
-							if (selectedIndex === index) {
-								$showLibrary = false
-								pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
-							} else {
-								const left = index * albumSize
-								scrollContainer.scrollTo({behavior: "smooth", left})
-							}
-						}}
-					/>
-				{/if}
-			{/each}
-		</div>
+		scale -= ev.deltaY * 0.01 // pinch out = positive scale change
+		scale = Math.min(Math.max(scale, 0.5), 2) // clamp
+	}}
+	on:scroll={(ev) => {
+		// console.log(ev, scrollContainer.scrollLeft, scrollContainer.clientWidth)
+		scrollPosition = scrollContainer?.scrollLeft
+	}}
+>
+	<div class="coverflow">
+		{#each Object.values($albums) as album, index}
+			<!-- kinda a hack but just find the first song -->
+			{@const song = album.find((x) => x)}
+			{#if song}
+				<CoverflowAlbum
+					size={albumSize}
+					meta={song.meta}
+					{index}
+					{startIndex}
+					{endIndex}
+					{selectedIndex}
+					trackList={album}
+					onClick={async () => {
+						if (selectedIndex === index) {
+							$showLibrary = false
+							pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
+						} else {
+							const left = index * albumSize
+							scrollContainer.scrollTo({behavior: "smooth", left})
+						}
+					}}
+				/>
+			{/if}
+		{/each}
 	</div>
-	<h1>{startIndex}, {endIndex}, {selectedIndex}, {scrollPosition}</h1>
-{/key}
+</div>
+<h1>{startIndex}, {endIndex}, {selectedIndex}, {scrollPosition}</h1>
 
 <style>
 	.outer {

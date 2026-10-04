@@ -12,13 +12,13 @@
 	export let onClick: () => Promise<void>
 	export let size: number
 
-	const PITCH_AMOUNT = size * 0.1
+	$: pitchAmount = size * 0.1
 
 	/** browser doesn't like it when we matrix3d hundreds of things so only apply the transform when we're this many out of range */
 	const ADDITIONAL_RENDER_RANGE = 3
 
 	$: inRenderRange = index >= startIndex - ADDITIONAL_RENDER_RANGE && index <= endIndex + ADDITIONAL_RENDER_RANGE
-	$: matrix = !inRenderRange || index === selectedIndex ? "none" : index > selectedIndex ? keystoneLeft(size, size, PITCH_AMOUNT) : keystoneRight(size, size, PITCH_AMOUNT)
+	$: matrix = !inRenderRange || index === selectedIndex ? "none" : index > selectedIndex ? keystoneLeft(size, size, pitchAmount) : keystoneRight(size, size, pitchAmount)
 	$: artwork = $meta.albumArtwork ?? DEFAULT_ALBUM_ART
 
 	// Right edge pinched, left edge fixed.

@@ -14,17 +14,23 @@
 <main hidden={!$showLibrary}>
 	{#if !collection}
 		{#if "showDirectoryPicker" in window}
-			<Button
-				onClick={async () => {
-					collection = await openMusicCollection()
-				}}>select music directory</Button
-			>
-			<Button
-				onClick={async () => {
-					await clearAllMetadata()
-					collection = await openMusicCollection()
-				}}>select music directory (clear cache)</Button
-			>
+			<div>
+				<h1>please select music directory</h1>
+				<p>this program will scan for music files in this directory and all subdirectories</p>
+			</div>
+			<div>
+				<Button
+					onClick={async () => {
+						collection = await openMusicCollection()
+					}}>select music directory</Button
+				>
+				<Button
+					onClick={async () => {
+						await clearAllMetadata()
+						collection = await openMusicCollection()
+					}}>select music directory (clear cache)</Button
+				>
+			</div>
 		{:else}
 			<h2>your browser is not supported</h2>
 		{/if}
@@ -74,7 +80,7 @@
 		visibility: visible;
 		transition: all 0.35s;
 		align-content: baseline;
-		grid-template-rows: auto auto 1fr;
+		grid-template-rows: auto 1fr;
 	}
 
 	main[hidden] {
