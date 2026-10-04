@@ -4,7 +4,7 @@
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
 	import {showLibrary} from "./state"
 
-	const ALBUM_SIZE = 500
+	const ALBUM_SIZE = 700
 
 	export let pleaseQueueMusic: (files: File[]) => void
 	export let collection: MusicCollection
@@ -68,7 +68,7 @@
 		overflow-x: scroll;
 		scroll-snap-type: x mandatory;
 		align-self: stretch;
-		background: radial-gradient(black 50%, transparent);
+		background: radial-gradient(black 30%, transparent);
 	}
 	.coverflow::before,
 	.coverflow::after {

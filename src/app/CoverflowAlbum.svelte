@@ -67,6 +67,11 @@
 	img {
 		height: var(--size);
 		width: var(--size);
+		/*
+			todo: remove box-reflect and replace with a fake image for the reflection
+			we can use grid to zero out its box model height
+			i tried to do this by modifying the matrix but it resulted in the reflection "jumping around"
+		*/
 		-webkit-box-reflect: below 1px linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.4));
 		transform-origin: 0 0;
 		transition: 0.3s all;
