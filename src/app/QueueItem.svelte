@@ -7,6 +7,7 @@
 	// import iconPending from '@primer/octicons/build/svg/circle-16.svg'
 	import iconPending from "@primer/octicons/build/svg/issue-draft-16.svg"
 	import {collection} from "./state.ts"
+	import PlayIcon from "./PlayIcon.svelte"
 
 	export let id: string
 
@@ -33,9 +34,7 @@
 	<h1>{meta?.title ?? heading}</h1>
 	<h2>{meta?.artist ?? subheading}</h2>
 	<div class="icons">
-		{#if selected}
-			<img alt="track is selected" class="icon" src={iconPlay} />
-		{/if}
+		<PlayIcon hidden={!selected} />
 		{#if ready}
 			<img alt="track is ready" class="icon ready" src={iconReady} />
 		{/if}
@@ -53,21 +52,24 @@
 		font-size: 1em;
 		display: grid;
 		grid-template-rows: auto auto;
-		grid-template-columns: 6em auto 5em;
+		grid-template-columns: 5.5em auto 6.3em;
 		padding: 0;
 		padding-right: 0.5em;
-		border: transparent solid;
+		border: none;
+		background-image: linear-gradient(45deg, #0000004d, transparent);
+		background-color: transparent;
+		backdrop-filter: blur(8px);
+		color: #b5b5b5;
 	}
 
 	button.selected {
-		border-color: blue;
+		color: #f1f1f1;
 	}
 
 	h1,
 	h2 {
 		margin: 0;
 		font-weight: normal;
-		font-size: 1em;
 		text-align: left;
 		grid-column: 2;
 		/* text-overflow: ellipsis;
@@ -76,16 +78,20 @@
 
 		text-overflow: ellipsis;
 		overflow: hidden;
+
+		margin-left: 0.3em;
 	}
 
 	h1 {
 		font-weight: 600;
 		align-self: end;
-		margin-bottom: 0.3em;
+		font-size: 1.2em;
+		margin-bottom: 0.1em;
 	}
 
 	h2 {
 		align-self: start;
+		font-size: 0.9em;
 	}
 
 	.art {
@@ -99,6 +105,7 @@
 	}
 
 	.icons {
+		font-size: 2em;
 		grid-row: 1 / span 2;
 		grid-column: 3;
 		margin-left: 1em;
@@ -106,6 +113,11 @@
 		flex-flow: row nowrap;
 		align-items: center;
 		justify-content: end;
+	}
+
+	.icons img {
+		filter: invert();
+		opacity: 0.7;
 	}
 
 	.icon {

@@ -166,6 +166,7 @@
 		}
 
 		if (ev.key === "Escape") {
+			ev.preventDefault() // otherwise the browser stops loading network resources
 			$showLibrary = !$showLibrary
 			return
 		}
@@ -177,6 +178,8 @@
 <svelte:window on:resize={onResize} on:mousemove={onMouse} on:keydown={onKey} on:drop|preventDefault on:dragover|preventDefault />
 
 <canvas bind:this={canvas}></canvas>
+
+<div class="dimmer" hidden={hideUi || $showLibrary} />
 
 <div class="error" hidden={!$musicCanvasError}>
 	<h1>{$musicCanvasError}</h1>
@@ -202,14 +205,11 @@
 
 	<!-- <p>editor is focused? {$editorFocused}</p> -->
 
-	<h1>playing={$nowPlayingId}</h1>
-
-	<MusicLibrary {pleaseQueueMusic} {pleaseClearQueue} />
-
 	<Queue {musicCanvas} {onSelect} {onAnalysis} {onAddToQueue} bind:next={nextSong} bind:previous={prevSong} bind:openFilePicker bind:pleaseQueueMusic {pleaseStopAudio} bind:pleaseClearQueue />
 
 	<Options {musicCanvas} />
 </main>
+<MusicLibrary {pleaseQueueMusic} {pleaseClearQueue} />
 
 <!-- <CodeEditor url={".temp"} title="h" code="// hello world"></CodeEditor> -->
 
@@ -272,13 +272,29 @@
 		bottom: 0;
 		left: 0;
 		height: 10em;
-		background: rgba(0, 255, 0, 0.5);
 	}
 
 	.preload {
 		position: fixed;
 		top: -1000px;
 		left: -1000px;
+		opacity: 0;
+	}
+
+	.dimmer {
+		background-image: radial-gradient(ellipse at bottom left, #00000076, transparent 20%), radial-gradient(ellipse at bottom right, #000000a2, transparent 10%);
+		position: fixed;
+		z-index: -1;
+		top: 0;
+		right: 0;
+		left: 0;
+		bottom: 0;
+		display: block;
+		opacity: 1;
+		transition: opacity 0.15s;
+	}
+
+	.dimmer[hidden] {
 		opacity: 0;
 	}
 </style>

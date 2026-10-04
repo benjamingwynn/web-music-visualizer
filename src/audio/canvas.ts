@@ -143,7 +143,7 @@ MusicCanvas.registerVisualization("debug", {
 	info: {
 		name: "Welcome Visualization",
 		author: "Benjamin Gwynn",
-		description: "tests the functionality of registering a visualization and welcomes the user to the platform",
+		description: "Click on the name above to pick a different visualizer and change the visuals!",
 	},
 	does: (canvas) => {
 		// do setup here

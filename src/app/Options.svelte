@@ -79,6 +79,7 @@
 	</div>
 
 	<button
+		class="title-button"
 		type="button"
 		on:click={() => {
 			showList = !showList
@@ -87,8 +88,8 @@
 		<h2>{active?.info.name}</h2>
 	</button>
 
-	<h4>{active?.info.description}</h4>
-	<h3>{active?.info.author}</h3>
+	<h4 class="vis-desc">{active?.info.description}</h4>
+	<h3 class="vis-author">{active?.info.author}</h3>
 
 	<!-- <button type="button" on:click={() => (showCode = !showCode)}>show code</button> -->
 </div>
@@ -104,17 +105,20 @@
 	.float {
 		position: fixed;
 		right: 0;
-		width: 400px;
+		width: 600px;
 		overflow-y: auto;
 		bottom: 0;
-		background: rgba(0, 0, 255, 0.5);
 		margin-right: 1em;
-		color: white;
+		color: rgb(220, 220, 220);
+		display: flex;
+		flex-flow: column nowrap;
+		align-items: end;
 	}
 
 	button {
 		display: grid;
 		padding: 0.5em 0.2em;
+		text-align: left;
 	}
 
 	button.active {
@@ -127,7 +131,6 @@
 		font-size: 1em;
 		margin: 0;
 		font-weight: normal;
-		text-align: left;
 	}
 
 	h3 {
@@ -145,5 +148,28 @@
 
 	*[hidden] {
 		display: none;
+	}
+
+	.title-button {
+		background: none;
+		border: none;
+		text-align: right;
+		font-size: 2.6em;
+		cursor: pointer;
+	}
+
+	.title-button:hover {
+		text-decoration: underline;
+	}
+
+	.vis-desc {
+		text-align: right;
+		font-size: 1.3em;
+		margin-bottom: 1em;
+	}
+
+	.vis-author {
+		text-align: right;
+		margin-bottom: 2em;
 	}
 </style>
