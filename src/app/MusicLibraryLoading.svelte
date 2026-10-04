@@ -42,7 +42,7 @@
 		display: block;
 		box-shadow: hsl(196, 86%, 72%) 0px 0px 4px;
 		overflow: visible;
-		background: linear-gradient(45deg, transparent, orange, transparent);
+		background: linear-gradient(45deg, transparent, azure, transparent);
 	}
 
 	.i {

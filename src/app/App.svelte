@@ -12,6 +12,7 @@
 	import CodeEditor from "./CodeEditor.svelte"
 	import LoadCode from "./LoadCode.svelte"
 	import {DEFAULT_ALBUM_ART} from "./config.ts"
+	import {releaseWakeLock, requestWakeLock} from "./wakelock.ts"
 
 	const DEFAULT_LOAD_LIST = [
 		// .
@@ -83,6 +84,7 @@
 	}
 
 	async function pleaseStopAudio() {
+		releaseWakeLock()
 		musicCanvas.stop()
 		audio.pause()
 		audio.src = ""
@@ -183,7 +185,17 @@
 
 <main class:hidden={hideUi} bind:this={main}>
 	<div class="player">
-		<audio bind:this={audio} controls on:ended={() => nextSong()}></audio>
+		<audio
+			bind:this={audio}
+			controls
+			on:ended={() => nextSong()}
+			on:pause={() => {
+				releaseWakeLock()
+			}}
+			on:play={() => {
+				requestWakeLock()
+			}}
+		></audio>
 		<button type="button" on:click={prevSong}>PREV</button>
 		<button type="button" on:click={nextSong}>NEXT</button>
 		<button type="button" on:click={fullscreen}>enter/exit fullscreen (F key)</button>
