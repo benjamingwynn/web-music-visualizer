@@ -6,6 +6,7 @@
 	import PlayIcon from "./PlayIcon.svelte"
 	import {nowPlayingId, showLibrary} from "./state"
 
+	export let key: string
 	export let meta: Writable<SongMetadata>
 	export let index: number
 	export let startIndex: number
@@ -52,6 +53,8 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
+	data-key={key}
+	data-index={index}
 	role="button"
 	class="album"
 	class:selected={index === selectedIndex}

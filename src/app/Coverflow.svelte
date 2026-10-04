@@ -1,10 +1,10 @@
 <script lang="ts">
-	import {tick} from "svelte"
 	import type {Writable} from "svelte/store"
 	import type {MusicCollection} from "./musicCollection"
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
 	import {collection, nowPlayingId, showLibrary} from "./state"
 	import {DEFAULT_ALBUM_ART} from "./config"
+	import {beforeUpdate, afterUpdate, tick} from "svelte"
 
 	let scale = 1
 	$: albumSize = 600 * scale
@@ -25,6 +25,16 @@
 	$: selectedIndex = Math.floor(scrollPosition / albumSize)
 	$: startIndex = selectedIndex - Math.floor(albumsPerPage / 2)
 	$: endIndex = selectedIndex + Math.floor(albumsPerPage / 2)
+
+	$: selectedKey = (scrollContainer?.querySelector(`div[data-index="${selectedIndex}"]`) as HTMLElement | undefined)?.dataset.key
+	afterUpdate(() => {
+		if (selectedKey && !horizontalScrolling) {
+			// try to fix scroll pos when adding things before/after
+			// (sadly this doesn't work for when we're actually scrolling so just disable when we are scrolling)
+			const e = scrollContainer.querySelector(`div[data-key="${selectedKey}"]`)
+			e?.scroll()
+		}
+	})
 
 	function handleScroll() {
 		scrollPosition = scrollContainer.scrollLeft
@@ -72,11 +82,12 @@
 <div bind:this={scrollContainer} class="outer" on:wheel={handleZoom} on:scroll={handleScroll}>
 	<div class="coverflow" style:--size={albumSize + "px"}>
 		{#if $albums}
-			{#each Object.values($albums) as album, index}
+			{#each Object.entries($albums) as [key, album], index (key)}
 				<!-- kinda a hack but just find the first song -->
 				{@const song = album.find((x) => x)}
 				{#if song}
 					<CoverflowAlbum
+						{key}
 						size={albumSize}
 						meta={song.meta}
 						{index}
