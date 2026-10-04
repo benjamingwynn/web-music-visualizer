@@ -1,10 +1,11 @@
 <script lang="ts">
-	import iconPlay from '@primer/octicons/build/svg/play-16.svg'
-	import iconReady from '@primer/octicons/build/svg/issue-closed-16.svg'
+	import iconPlay from "@primer/octicons/build/svg/play-16.svg"
+	import iconPlay2 from "@primer/octicons/build/svg/triangle-left-16.svg"
+	import iconReady from "@primer/octicons/build/svg/issue-closed-16.svg"
 	// import iconProcessing from '@primer/octicons/build/svg/issue-draft-16.svg'
-	import iconProcessing from '@primer/octicons/build/svg/gear-16.svg'
+	import iconProcessing from "@primer/octicons/build/svg/gear-16.svg"
 	// import iconPending from '@primer/octicons/build/svg/circle-16.svg'
-	import iconPending from '@primer/octicons/build/svg/issue-draft-16.svg'
+	import iconPending from "@primer/octicons/build/svg/issue-draft-16.svg"
 
 	export let heading: string
 	export let subheading: string
@@ -24,18 +25,18 @@
 	<h1>{heading}</h1>
 	<h2>{subheading}</h2>
 	<div class="icons">
-			{#if selected}
-				<img alt="track is selected" class="icon" src={iconPlay} />
-			{/if}
-			{#if ready}
-				<img alt="track is ready" class="icon ready" src={iconReady} />
-			{/if}
-			{#if processing}
-				<img alt="track is processing" class="icon processing spin" src={iconProcessing} />
-			{/if}
-			{#if pending}
-				<img alt="track is pending processing" class="icon pending" src={iconPending} />
-			{/if}
+		{#if selected}
+			<img alt="track is selected" class="icon" src={iconPlay} />
+		{/if}
+		{#if ready}
+			<img alt="track is ready" class="icon ready" src={iconReady} />
+		{/if}
+		{#if processing}
+			<img alt="track is processing" class="icon processing spin" src={iconProcessing} />
+		{/if}
+		{#if pending}
+			<img alt="track is pending processing" class="icon pending" src={iconPending} />
+		{/if}
 	</div>
 </button>
 
@@ -54,8 +55,9 @@
 		border-color: blue;
 	}
 
-	h1,h2 {
-		margin:0;
+	h1,
+	h2 {
+		margin: 0;
 		font-weight: normal;
 		font-size: 1em;
 		text-align: left;
@@ -108,7 +110,11 @@
 	}
 
 	@keyframes spin {
-		from {transform: rotate(0deg);}
-		to {transform: rotate(360deg);}
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>
