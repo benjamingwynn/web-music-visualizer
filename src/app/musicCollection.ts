@@ -61,6 +61,7 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 	}
 	const rtn: SongMetadata = {
 		...inherit,
+		albumArtwork: biggestImage,
 		albumName: probed.common.album ?? "Unidentified Album",
 		albumArtist: probed.common.albumartist ?? probed.common.artist ?? "Unidentified Artist",
 		artist: probed.common.artist ?? "Unidentified Artist",
