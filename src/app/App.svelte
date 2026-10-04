@@ -11,7 +11,7 @@
 	import NotChromeWarning from "./NotChromeWarning.svelte"
 	import CodeEditor from "./CodeEditor.svelte"
 	import LoadCode from "./LoadCode.svelte"
-	import {DEFAULT_ALBUM_ART} from "./config.ts"
+	import {DEFAULT_ALBUM_ART, HIDE_UI_AFTER} from "./config.ts"
 	import {releaseWakeLock, requestWakeLock} from "./wakelock.ts"
 
 	const DEFAULT_LOAD_LIST = [
@@ -41,7 +41,6 @@
 	let hideUi = false
 	let nextFrame: number
 	let shouldHide = false
-	const HIDE_UI_AFTER = 2000
 	const musicCanvas = new MusicCanvas()
 	const musicCanvasError = musicCanvas.error
 	$: document.body.style.cursor = hideUi ? "none" : "default"

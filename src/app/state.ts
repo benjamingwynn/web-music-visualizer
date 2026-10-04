@@ -1,7 +1,7 @@
 import {type MusicCollection} from "./musicCollection.ts"
 import {writable} from "svelte/store"
 
-export const showLibrary = writable(true)
+export const showLibrary = writable(false)
 
 export const nowPlayingId = writable<string | null>(null)
 
