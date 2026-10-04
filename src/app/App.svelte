@@ -45,7 +45,7 @@
 	const musicCanvasError = musicCanvas.error
 	$: document.body.style.cursor = hideUi ? "none" : "default"
 	const frame = () => {
-		hideUi = shouldHide && performance.now() > mouseLastMoved + HIDE_UI_AFTER && !$editorFocused
+		hideUi = shouldHide && performance.now() > mouseLastMoved + HIDE_UI_AFTER && !$editorFocused && !$showLibrary
 		// console.log("hide ui:", shouldHide, mouseLastMoved, $editorFocused)
 
 		nextFrame = requestAnimationFrame(frame)

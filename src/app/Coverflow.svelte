@@ -70,7 +70,7 @@
 </script>
 
 <div bind:this={scrollContainer} class="outer" on:wheel={handleZoom} on:scroll={handleScroll}>
-	<div class="coverflow">
+	<div class="coverflow" style:--size={albumSize + "px"}>
 		{#each Object.values($albums) as album, index}
 			<!-- kinda a hack but just find the first song -->
 			{@const song = album.find((x) => x)}
@@ -83,8 +83,8 @@
 					{endIndex}
 					{selectedIndex}
 					trackList={album}
-					onClick={async () => {
-						if (selectedIndex === index) {
+					onClick={async (isSelected) => {
+						if (isSelected) {
 							$showLibrary = false
 							pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
 						} else {

@@ -2,6 +2,7 @@
 	import type {Writable} from "svelte/store"
 	import type {Song, SongMetadata} from "./musicCollection"
 	import {DEFAULT_ALBUM_ART} from "./config"
+	import {sleep} from "./sleep"
 
 	export let meta: Writable<SongMetadata>
 	export let index: number
@@ -9,7 +10,7 @@
 	export let endIndex: number
 	export let selectedIndex: number
 	export let trackList: Song[]
-	export let onClick: () => Promise<void>
+	export let onClick: (isSelected: boolean) => Promise<void>
 	export let size: number
 
 	$: pitchAmount = size * 0.1
@@ -17,8 +18,9 @@
 	/** browser doesn't like it when we matrix3d hundreds of things so only apply the transform when we're this many out of range */
 	const ADDITIONAL_RENDER_RANGE = 3
 
+	$: iAmSelected = index === selectedIndex
 	$: inRenderRange = index >= startIndex - ADDITIONAL_RENDER_RANGE && index <= endIndex + ADDITIONAL_RENDER_RANGE
-	$: matrix = !inRenderRange || index === selectedIndex ? "none" : index > selectedIndex ? keystoneLeft(size, size, pitchAmount) : keystoneRight(size, size, pitchAmount)
+	$: matrix = !inRenderRange || iAmSelected ? "none" : index > selectedIndex ? keystoneLeft(size, size, pitchAmount) : keystoneRight(size, size, pitchAmount)
 	$: artwork = $meta.albumArtwork ?? DEFAULT_ALBUM_ART
 
 	// Right edge pinched, left edge fixed.
@@ -40,9 +42,29 @@
 			0, 0, 1, 0,
 			0, ${d}, 0, 1)`
 	}
+
+	let clicked = false
 </script>
 
-<div class:selected={index === selectedIndex} style:--size={size + "px"} tabindex="0" on:click={onClick}>
+<div
+	class:selected={index === selectedIndex}
+	class:clicked
+	tabindex="0"
+	on:click={async () => {
+		if (clicked) return
+		if (iAmSelected) {
+			clicked = true
+		}
+		const timeStarted = Date.now()
+		await onClick(iAmSelected)
+		if (iAmSelected) {
+			const timeTaken = Date.now() - timeStarted
+			const extraDelay = Math.max(0, 300 - timeTaken)
+			await sleep(extraDelay)
+			clicked = false
+		}
+	}}
+>
 	{#if inRenderRange}
 		<div class="art" style:transform={matrix}>
 			<img alt="artwork" src={artwork} />
@@ -58,12 +80,21 @@
 		display: grid;
 		scroll-snap-align: center;
 		align-self: center;
+		transition: transform 0.15s;
+	}
+
+	div.selected {
+		z-index: 1;
 	}
 
 	div.selected h1,
 	div.selected h2 {
 		color: white;
 		opacity: 0.95;
+	}
+
+	div.clicked {
+		transform: scale(2.5);
 	}
 
 	.art {
