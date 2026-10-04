@@ -1,3 +1,11 @@
+import {MusicCanvas} from "../audio/canvas.ts"
+
+/** using a 0-1 float picks from the defined range */
+function lerp(min: number, max: number, inputZeroToOne: number) {
+	const delta = max - min
+	return min + inputZeroToOne * delta
+}
+
 /** util function for hue and saturation to [r,g,b] */
 function hueSaturationToRGB(hue: number, saturation: number) {
 	// clamp
@@ -16,8 +24,6 @@ function hueSaturationToRGB(hue: number, saturation: number) {
 	const r0 = channel(0)
 	const g0 = channel(4)
 	const b0 = channel(2)
-
-	const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 	const r = lerp(1, r0, saturation)
 	const g = lerp(1, g0, saturation)
@@ -50,7 +56,7 @@ struct Options {
 	maxRadius: f32,
 };
 
-// note how binding 0 isn't used
+@group(0) @binding(0) var<storage, read> colors: array<vec4<f32>>;
 @group(0) @binding(1) var<storage, read> roots: array<vec2<f32>>;
 @group(0) @binding(2) var<storage, read> targets: array<vec2<f32>>;
 @group(0) @binding(3) var<storage, read> options: Options;
@@ -62,7 +68,7 @@ fn calculate_line_with_width(x1: f32, y1: f32, x2: f32, y2: f32, width: f32, wRa
 	let dy = y2 - y1;
 
 	// Compute the length of the direction vector
-	let length = sqrt(dx * dx + dy * dy);
+	let length = max(sqrt(dx * dx + dy * dy), 0.000001);
 
 	// Normalize the direction vector
 	let dx_norm = dx / length;
@@ -157,13 +163,16 @@ fn main(
 			vec2(left, bottom),
 		);
 
-		let color = vec4f(1.0, 1.0, 1.0, 0.2);
+		let color = vec4f(1.0, 1.0, 1.0, 0.2 * colors[targetIndex].a);
 		let position = vec4f(positions[vertexIndex] * canvasScale, 0, 1.0);
 
 		return VertexOutput(position, color);
 	} else {
 		// draw a line:
 		let line = lines[lineIndex];
+		if (line.a <= 0) {
+			return VertexOutput(vec4f(0, 0, 0, 1), vec4f(0));
+		}
 		let x1 = 2 * line.x1 - 1;
 		let y1 = 2 * -line.y1 + 1;
 		let x2 = 2 * line.x2 - 1;
@@ -240,7 +249,7 @@ struct Options {
 	let distance = sqrt(dx * dx + dy * dy);
 	let maxD = options.radius;
 
-	if (distance > maxD) {
+	if (distance >= maxD || distance < 0.000001 || colors[targetIndex].a <= 0) {
 		rtn[rtnIndex] = Line(0, 0, 0, 0, 0, 0, 0, 0);
 		return;
 	}
@@ -261,7 +270,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 	info: {
 		name: "Dots and Lines",
 		author: "Benjamin Gwynn",
-		description: "WebGPU port of my original spotifystarfield.com visualization",
+		description: "Colourful constellations moving with the music.",
 		gpu: "webgpu",
 		rating: 5,
 	},
@@ -270,12 +279,13 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		const nRoots = 900
 		const nTargets = 700
 
-		const smoothness = 0.9
+		let smoothness = 0.9
 
 		let roots = new Float32Array(randomPositions(nRoots))
 		let targets = new Float32Array(randomPositions(nTargets))
 		let colors = new Float32Array(makeColors(nTargets))
 		const targetVelocities = new Float32Array(nTargets)
+		const rootVelocities = new Float32Array(nRoots)
 		/**
 		 * 1: north-west (top-left)
 		 * 2: north (top)
@@ -289,11 +299,12 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		const rootDirections = new Float32Array(randomDirections(nRoots))
 		const targetDirections = new Float32Array(randomDirections(nTargets))
 
-		const BEAT_STRENGTH_VELOCITY_MODIFIER = 0.0017
+		// A small impulse on top of continuous growth, including on tracks with dense tatums.
+		const BEAT_STRENGTH_VELOCITY_MODIFIER = 0.00445
 
 		const onBeat = (strength: number) => {
 			for (let i = 0; i < targetVelocities.length; i++) {
-				targetVelocities[i] = Math.min(1, strength) * BEAT_STRENGTH_VELOCITY_MODIFIER
+				targetVelocities[i] = Math.max(targetVelocities[i], Math.max(0, Math.min(1, strength)) * BEAT_STRENGTH_VELOCITY_MODIFIER)
 			}
 		}
 
@@ -312,7 +323,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		])
 
 		let targetRadius: number = MAX_RADIUS
-		let radiusChangeSpeed = 0.00005
+		let radiusChangeSpeed = 0.00002
 		/** 0-1 */
 		function setRadius(radius: number) {
 			targetRadius = Math.max(MIN_RADIUS, Math.min(1, radius) * MAX_RADIUS)
@@ -334,13 +345,21 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let debug2: string = "debug"
 		let debug3: string = "debug"
 		let debug4: string = "debug"
+		let debug5: string = "debug"
+		let debug6: string = "debug"
+		let debug7: string = "debug"
 		// let debug: string = []
 
 		let WORLD_SPEED = 0.0001
 		let floatSpeed = 0.5
-		let opacityIncreaseSpeed = 0.001
-
-		let useOutOfRangeTargets = false
+		// Keep a fixed population; only reuse a target after its old connections fade.
+		const targetAges = new Float32Array(nTargets)
+		const targetLifetimes = new Float32Array(nTargets)
+		for (let i = 0; i < nTargets; i++) {
+			targetLifetimes[i] = 24000 + Math.random() * 24000
+			targetAges[i] = Math.random() * targetLifetimes[i]
+		}
+		let birthBudget = 0
 		const outOfRangeTargets = new Set<number>()
 
 		let warpEffectEnabled = true
@@ -355,7 +374,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let angle = 0
 
 		// HACK: debugging
-		const onClick = (ev) => {
+		const onClick = (ev: MouseEvent) => {
 			if (ev.shiftKey) {
 				enableDrawDebug = !enableDrawDebug
 			}
@@ -434,17 +453,21 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				" cp out : " + msCopyOut + "ms",
 				"mem in  : " + ((roots.byteLength + targets.byteLength) / 1024).toFixed(2) + "k",
 				"options : " + options,
-				"respawn : " + useOutOfRangeTargets + " / " + outOfRangeTargets.size,
+				"regrowth: " + outOfRangeTargets.size + " waiting",
 				"warp    : " + warpEffectEnabled + " / " + warpEffectChangeSpeed + " / " + warpEffectSpeedTarget + " / " + warpEffectSpeedActual,
 				"rotate  : " + rotateSpeedTarget + " / " + rotateChangeSpeed + " / " + rotateSpeedActual,
-				,
+				"float   : " + floatSpeed,
 				"",
 				debug0,
 				debug1,
 				debug2,
 				debug3,
 				debug4,
+				debug5,
+				debug6,
+				debug7,
 			]
+			// debug3=''
 
 			const fontSize = 11
 			for (let i = 0; i < debug.length; i++) {
@@ -462,7 +485,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		let __init: ReturnType<typeof _init> | null = null
 		async function _init() {
 			const adapter = await navigator.gpu?.requestAdapter()
-			const device = await adapter?.requestDevice({requiredLimits: {maxBufferSize: 1024 * 512}})
+			const device = await adapter?.requestDevice()
 			if (!device) {
 				throw new Error("need a browser that supports WebGPU")
 			}
@@ -475,7 +498,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		}
 
 		function resize(ctx: GPUCanvasContext) {
-			debug1 = ctx.canvas.height + "x" + ctx.canvas.width
+			// debug1 = ctx.canvas.height + "x" + ctx.canvas.width
 			// set ratio
 			options[0] = ctx.canvas.height / ctx.canvas.width
 			const canvasSize = ctx.canvas.height * ctx.canvas.width
@@ -490,6 +513,11 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			resize(ctx)
 
 			const device = await init()
+			if (signal.aborted) {
+				device.destroy()
+				signal.throwIfAborted()
+			}
+			signal.addEventListener("abort", () => device.destroy(), {once: true})
 
 			const presentationFormat = navigator.gpu.getPreferredCanvasFormat()
 			ctx.configure({
@@ -528,8 +556,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
 			})
 
-			const nLineConnections = roots.length * targets.length
-			const lineBufferSize = nLineConnections * 5 * Float32Array.BYTES_PER_ELEMENT
+			const nLineConnections = nRoots * nTargets
+			const lineBufferSize = nLineConnections * 8 * Float32Array.BYTES_PER_ELEMENT
 			const rtnBuffer = device.createBuffer({
 				label: "rtnBuffer",
 				size: lineBufferSize,
@@ -619,18 +647,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				layout: renderBindGroupPipelineLayout,
 
 				vertex: {
-					buffers: [
-						{
-							arrayStride: 32,
-							attributes: [
-								{
-									shaderLocation: 0,
-									offset: 0,
-									format: "float32x4",
-								},
-							],
-						},
-					],
 					module: device.createShaderModule({
 						code: vertWGSL,
 					}),
@@ -675,34 +691,35 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				},
 			})
 
-			const computeResultBuffer = device.createBuffer({
-				label: "computeResultBuffer",
-				size: lineBufferSize,
-				usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
-			})
-
-			signal.addEventListener("abort", () => {
-				targetsBuffer.destroy()
-				rootsBuffer.destroy()
-				optionsBuffer.destroy()
-				computeResultBuffer.destroy()
-			})
-
-			const nRoots = roots.length / 2
-			const nTargets = targets.length / 2
 			const nShapes = nRoots + nTargets
 			const nShapeVertices = nShapes * 6 // 6 vertices per shape
 			const nLines = nRoots * nTargets
 			const nLineVertices = nLines * 6 // 6 vertices per line
 			const drawPassCount = nShapeVertices + nLineVertices
-			const bufferSize = drawPassCount * 32
-			debug0 = nShapes + " shapes. dp: " + drawPassCount + ". buffer size: " + bufferSize / 1024 + "k"
+			debug0 = nShapes + " shapes. dp: " + drawPassCount + ". line buffer: " + lineBufferSize / 1024 + "k"
 
-			const drawBuffer = device.createBuffer({
-				// i think this is a draw buffer but im not sure. it needs to be bigger the more stuff we draw, and its on bind 0 and not used by my shaders
-				label: "drawBuffer",
-				size: bufferSize,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
+			const computeBindGroup = device.createBindGroup({
+				label: "computeBindGroup",
+				layout: computeBindGroupLayout,
+				entries: [
+					{binding: 0, resource: {buffer: rtnBuffer}},
+					{binding: 1, resource: {buffer: rootsBuffer}},
+					{binding: 2, resource: {buffer: targetsBuffer}},
+					{binding: 3, resource: {buffer: optionsBuffer}},
+					{binding: 4, resource: {buffer: colorsBuffer}},
+				],
+			})
+
+			const renderBindGroup = device.createBindGroup({
+				label: "renderBindGroup",
+				layout: renderBindGroupLayout,
+				entries: [
+					{binding: 0, resource: {buffer: colorsBuffer}},
+					{binding: 1, resource: {buffer: rootsBuffer}},
+					{binding: 2, resource: {buffer: targetsBuffer}},
+					{binding: 3, resource: {buffer: optionsBuffer}},
+					{binding: 4, resource: {buffer: rtnBuffer}},
+				],
 			})
 
 			// returns the function to render
@@ -721,18 +738,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 				const tComputeStart = Date.now()
 
-				const computeBindGroup = device.createBindGroup({
-					label: "computeBindGroup",
-					layout: computeBindGroupLayout,
-					entries: [
-						{binding: 0, resource: {buffer: rtnBuffer}},
-						{binding: 1, resource: {buffer: rootsBuffer}},
-						{binding: 2, resource: {buffer: targetsBuffer}},
-						{binding: 3, resource: {buffer: optionsBuffer}},
-						{binding: 4, resource: {buffer: colorsBuffer}},
-					],
-				})
-
 				// Encode commands to do the computation
 				const encoder = device.createCommandEncoder({
 					label: "encoder",
@@ -743,29 +748,13 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				})
 				computePass.setPipeline(computePipeline)
 				computePass.setBindGroup(0, computeBindGroup)
-				computePass.dispatchWorkgroups(roots.length / 2, targets.length / 2) // divide by two for vec2
+				computePass.dispatchWorkgroups(Math.ceil(nRoots / 128), nTargets)
 				computePass.end()
 				msCompute = Date.now() - tComputeStart
 
 				const tDrawStart = Date.now()
 
-				// create a buffer on the GPU to get a copy of the results
-
-				// Encode a command to copy the results to a mappable buffer.
-				encoder.copyBufferToBuffer(rtnBuffer, 0, computeResultBuffer, 0, computeResultBuffer.size)
-
 				// draw the result:
-				const renderBindGroup = device.createBindGroup({
-					label: "renderBindGroup",
-					layout: renderBindGroupLayout,
-					entries: [
-						{binding: 0, resource: {buffer: drawBuffer}},
-						{binding: 1, resource: {buffer: rootsBuffer}},
-						{binding: 2, resource: {buffer: targetsBuffer}},
-						{binding: 3, resource: {buffer: optionsBuffer}},
-						{binding: 4, resource: {buffer: computeResultBuffer}},
-					],
-				})
 
 				const textureView = ctx.getCurrentTexture().createView()
 
@@ -783,11 +772,6 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				const passEncoderRender = encoder.beginRenderPass(renderPassDescriptor)
 				passEncoderRender.setPipeline(renderPipeline)
 				passEncoderRender.setBindGroup(0, renderBindGroup)
-				passEncoderRender.setVertexBuffer(0, drawBuffer)
-				passEncoderRender.setVertexBuffer(1, rootsBuffer)
-				passEncoderRender.setVertexBuffer(2, targetsBuffer)
-				passEncoderRender.setVertexBuffer(3, optionsBuffer)
-				passEncoderRender.setVertexBuffer(4, computeResultBuffer)
 
 				passEncoderRender.draw(drawPassCount) // draw all the vertices
 
@@ -814,12 +798,16 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		}
 
 		function physics(dT: number) {
+			const frameScale = dT / (1000 / 60)
+			const velocityDecay = Math.pow(smoothness, frameScale)
+			const impulseScale = (1 - velocityDecay) / (1 - smoothness)
 			// angle+= dT * 0.0001
 			rotatePoints(roots, 0.00005 * dT * rotateSpeedActual, options[0])
 			rotatePoints(targets, 0.00005 * dT * rotateSpeedActual, options[0])
 
 			if (warpEffectEnabled) {
 				for (let i = 0; i < targets.length; i += 2) {
+					if (outOfRangeTargets.has(i / 2)) continue
 					const cx = 0.5
 					const cy = 0.5
 					const zx = (targets[i + 0] - cx) * Math.E * warpEffectSpeedActual * dT * options[0]
@@ -842,44 +830,30 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 			for (let i = 0; i < targets.length; i += 2) {
 				const vI = Math.floor(i / 2)
-				if (useOutOfRangeTargets && outOfRangeTargets.has(vI)) {
+				if (outOfRangeTargets.has(vI)) {
 					continue
 				}
 				const direction = targetDirections[vI]
 				const [deltaX, deltaY] = deltasFromDirection(direction)
 
-				targets[i + 0] += deltaX * (WORLD_SPEED * floatSpeed)
-				targets[i + 1] += deltaY * (WORLD_SPEED * floatSpeed)
+				targets[i + 0] += deltaX * (WORLD_SPEED * floatSpeed) * frameScale
+				targets[i + 1] += deltaY * (WORLD_SPEED * floatSpeed) * frameScale
 
 				if (targetVelocities[vI] > 0) {
 					const v = targetVelocities[vI]
-					targetVelocities[vI] = v * smoothness
-					targets[i + 0] += deltaX * v
-					targets[i + 1] += deltaY * v
+					targetVelocities[vI] = v * velocityDecay
+					targets[i + 0] += deltaX * v * impulseScale
+					targets[i + 1] += deltaY * v * impulseScale
 				}
 
-				const outOfRange = () => {
+				targetAges[vI] += dT
+				const fadeIn = Math.min(1, targetAges[vI] / 3000)
+				const fadeOut = Math.min(1, (targetLifetimes[vI] - targetAges[vI]) / 6000)
+				colors[vI * 4 + 3] = Math.max(0, Math.min(fadeIn, fadeOut))
+				if (targetAges[vI] >= targetLifetimes[vI] || targets[i] < 0 || targets[i] > 1 || targets[i + 1] < 0 || targets[i + 1] > 1) {
 					outOfRangeTargets.add(vI)
+					colors[vI * 4 + 3] = 0
 				}
-
-				const loop = (fn: () => void) => {
-					fn()
-
-					// const [r, g, b, a] = possibleNewColors[Math.floor(possibleNewColors.length * Math.random())]
-					const [r, g, b, a] = [0.25, 0.25, 0.25, 0]
-					const colorIndex = vI * 4
-					colors[colorIndex + 0] = r
-					colors[colorIndex + 1] = g
-					colors[colorIndex + 2] = b
-					colors[colorIndex + 3] = a
-				}
-
-				// offscreen fix (X)
-				if (targets[i + 0] < 0) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 0] = 1))
-				else if (targets[i + 0] > 1) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 0] = 0))
-				// offscreen fix (Y)
-				if (targets[i + 1] < 0) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 1] = 1))
-				else if (targets[i + 1] > 1) useOutOfRangeTargets ? outOfRange() : loop(() => (targets[i + 1] = 0))
 			}
 
 			// with root directions
@@ -889,8 +863,15 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 				const [deltaX, deltaY] = deltasFromDirection(direction)
 
-				roots[i + 0] += deltaX * (WORLD_SPEED * floatSpeed)
-				roots[i + 1] += deltaY * (WORLD_SPEED * floatSpeed)
+				roots[i + 0] += deltaX * (WORLD_SPEED * floatSpeed) * frameScale
+				roots[i + 1] += deltaY * (WORLD_SPEED * floatSpeed) * frameScale
+
+				if (rootVelocities[vI] > 0) {
+					const v = rootVelocities[vI]
+					rootVelocities[vI] = v * velocityDecay
+					targets[i + 0] += deltaX * v * impulseScale
+					targets[i + 1] += deltaY * v * impulseScale
+				}
 
 				// const backToCenter = () => {
 				// 	roots[i + 0] = 0.5
@@ -898,26 +879,18 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				// }
 
 				// offscreen fix (X)
-				if (roots[i + 0] < 0) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 0] = 1
-				else if (roots[i + 0] > 1) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 0] = 0
+				if (roots[i + 0] < 0) roots[i + 0] += 1
+				else if (roots[i + 0] > 1) roots[i + 0] -= 1
 				// offscreen fix (Y)
-				if (roots[i + 1] < 0) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 1] = 1
-				else if (roots[i + 1] > 1) /*warpEffectEnabled ? backToCenter() :*/ roots[i + 1] = 0
-			}
-
-			// increase alpha of colors
-			for (let i = 0; i < nTargets; i++) {
-				const aI = i * 4 - 1
-				if (colors[aI] < 1) colors[aI] += opacityIncreaseSpeed * dT
-				if (colors[aI] > 1) colors[aI] = 1
-				// console.log(colors[aI])
+				if (roots[i + 1] < 0) roots[i + 1] += 1
+				else if (roots[i + 1] > 1) roots[i + 1] -= 1
 			}
 
 			// change warp speed
 			if (warpEffectSpeedActual < warpEffectSpeedTarget) {
-				warpEffectSpeedActual += warpEffectChangeSpeed * dT
+				warpEffectSpeedActual = Math.min(warpEffectSpeedTarget, warpEffectSpeedActual + warpEffectChangeSpeed * dT)
 			} else if (warpEffectSpeedActual > warpEffectSpeedTarget) {
-				warpEffectSpeedActual -= warpEffectChangeSpeed * dT
+				warpEffectSpeedActual = Math.max(warpEffectSpeedTarget, warpEffectSpeedActual - warpEffectChangeSpeed * dT)
 			}
 			// trying to get to 0, so turn off warp once we're there
 			if (warpEffectSpeedTarget === 0 && warpEffectSpeedActual <= 0) {
@@ -931,9 +904,9 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 
 			// change rotate speed
 			if (rotateSpeedActual < rotateSpeedTarget) {
-				rotateSpeedActual += rotateChangeSpeed * dT
+				rotateSpeedActual = Math.min(rotateSpeedTarget, rotateSpeedActual + rotateChangeSpeed * dT)
 			} else if (rotateSpeedActual > rotateSpeedTarget) {
-				rotateSpeedActual -= rotateChangeSpeed * dT
+				rotateSpeedActual = Math.max(rotateSpeedTarget, rotateSpeedActual - rotateChangeSpeed * dT)
 			}
 
 			if (rotateSpeedActual <= 0) {
@@ -964,45 +937,62 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 		}
 		// okay!
 		let render: (() => void) | null = null
-		gpu(ctx, signal).then((r) => {
-			render = r
-		})
+		let initializationError: unknown
+		gpu(ctx, signal)
+			.then((r) => {
+				if (!signal.aborted) render = r
+			})
+			.catch((error) => {
+				if (!signal.aborted) initializationError = error
+			})
 		let possibleNewColors: [number, number, number, number][] = []
+
+		function regrow(dT: number, birthBudget: number) {
+			for (const index of outOfRangeTargets) {
+				if (birthBudget < 1) break
+				birthBudget--
+				const xy = index * 2
+				let parent = -1
+				if (Math.random() < 0.75) {
+					// Bounded sampling keeps regrowth O(n), even when nearly all targets are dormant.
+					for (let attempt = 0; attempt < 12; attempt++) {
+						const candidate = Math.floor(Math.random() * nTargets)
+						if (candidate !== index && !outOfRangeTargets.has(candidate) && colors[candidate * 4 + 3] > 0.6 && targets[candidate * 2] > 0.08 && targets[candidate * 2] < 0.92 && targets[candidate * 2 + 1] > 0.08 && targets[candidate * 2 + 1] < 0.92) {
+							parent = candidate
+							break
+						}
+					}
+				}
+				const root = Math.floor(Math.random() * nRoots)
+				const direction = parent >= 0 ? targetDirections[parent] : rootDirections[root]
+				// Inherit a heading with a little divergence, so neighbours drift together then separate.
+				targetDirections[index] = (direction + (Math.random() - 0.5) * 0.18 + 1) % 1
+				const [dx, dy] = deltasFromDirection(targetDirections[index])
+				const reach = options[2] * (0.25 + Math.random() * 0.35)
+				targets[xy] = Math.max(0.001, Math.min(0.999, (parent >= 0 ? targets[parent * 2] : roots[root * 2]) + dx * reach))
+				targets[xy + 1] = Math.max(0.001, Math.min(0.999, (parent >= 0 ? targets[parent * 2 + 1] : roots[root * 2 + 1]) + dy * reach))
+				targetAges[index] = 0
+				targetLifetimes[index] = 24000 + Math.random() * 24000
+				targetVelocities[index] = 0
+				const color = possibleNewColors[Math.floor(Math.random() * possibleNewColors.length)]
+				for (let channel = 0; channel < 3; channel++) {
+					colors[index * 4 + channel] = color ? color[channel] : parent >= 0 ? colors[parent * 4 + channel] : 0.25
+				}
+				colors[index * 4 + 3] = 0
+				outOfRangeTargets.delete(index)
+			}
+		}
 		return (dT, music) => {
-			canvas.height = masterCanvas.height
-			canvas.width = masterCanvas.width
+			if (initializationError) throw initializationError
+			// Returning from a background tab must not age or move the whole field at once.
+			dT = Number.isFinite(dT) ? Math.max(0, Math.min(dT, 50)) : 0
+			if (canvas.height !== masterCanvas.height) canvas.height = masterCanvas.height
+			if (canvas.width !== masterCanvas.width) canvas.width = masterCanvas.width
 			masterCtx.fillStyle = "black"
 			masterCtx.fillRect(0, 0, masterCanvas.width, masterCanvas.height)
 			resize(ctx)
 			debug0 = possibleNewColors.length + " colors"
-			const msPhysicsStart = performance.now()
-			physics(dT)
-			msPhysics = performance.now() - msPhysicsStart
-			const addOutOfRange = () => {
-				const targetsToMove = [...outOfRangeTargets.values()]
-				for (const moveTargetIndex of targetsToMove) {
-					// all of them?
-					if (moveTargetIndex !== undefined) {
-						const moveXyIndex = moveTargetIndex * 2
 
-						const respawnXyIndex = Math.floor((roots.length / 2) * Math.random())
-						targets[moveXyIndex + 0] = roots[respawnXyIndex + 0]
-						targets[moveXyIndex + 1] = roots[respawnXyIndex + 1]
-
-						// setup new color based on possible colors
-						if (possibleNewColors.length) {
-							const [r, g, b, a] = possibleNewColors[Math.floor(possibleNewColors.length * Math.random())]
-							const colorIndex = moveTargetIndex * 4
-							colors[colorIndex + 0] = r
-							colors[colorIndex + 1] = g
-							colors[colorIndex + 2] = b
-							colors[colorIndex + 3] = a
-						}
-
-						outOfRangeTargets.delete(moveTargetIndex)
-					}
-				}
-			}
 			if (!render) {
 				masterCtx.fillStyle = "green"
 				masterCtx.font = "36px monospace"
@@ -1010,21 +1000,26 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 			} else {
 				// react to music here
 
-				useOutOfRangeTargets = Boolean(music?.section.current) || warpEffectEnabled
 				if (music) {
 					// if (warpEffectEnabled) {
 					// 	if (music.changed.tatum && music.tatum.current && music.segment.current) {
 					// 		onBeat(music.tatum.current?.confidence * 0.5 * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
 					// 	}
 					// } else {
+					if (music.changed.tatum && music.tatum.current) {
+						debug1 = "tatum: " + JSON.stringify(music.tatum.current)
+					}
 					if (music.changed.beat && music.beat.current && music.segment.current) {
-						onBeat(music.beat.current?.perceivedLoudness * (warpEffectSpeedTarget === 0 ? 1 : 0.7182818284590451))
+						const beatStrength = music.beat.current?.perceivedLoudness * music.beat.current?.confidence
+						debug3 = "beat: " + beatStrength + `. l: ${music.beat.current?.perceivedLoudness}. c: ${music.beat.current?.confidence}.`
+						onBeat(beatStrength)
 					}
 					// }
 					debug4 = "loudness:" + music.segment.current?.perceivedLoudness
 
+					floatSpeed = (music?.section?.current?.bpm?.avg ?? 90) / 90
+					debug4 += " float: " + floatSpeed + ". section bpm avg: " + music.section.current?.bpm.avg
 					if (music.section.current && music.segment.current && (music.changed.section || !possibleNewColors.length)) {
-						floatSpeed = 1 - music.section.current.perceivedLoudness.avg
 						const candidates: [number, number, number, number][] = []
 						for (let i = 0; i < music.section.current.keys.length; i++) {
 							const confidence = music.section.current.keys[i]
@@ -1043,21 +1038,16 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						if (candidates.length) possibleNewColors = candidates
 					}
 
-					if ((warpEffectEnabled && music.changed.beat) || (!warpEffectEnabled && music.changed.tatum)) {
-						// move an out of range target onto a root when a tatum happens
-						addOutOfRange()
-					}
-
 					if (music.segment.current) {
 						setRadius(music.segment.current.perceivedLoudness * 2)
 					}
 
 					let warpReason = null
 					if (music.section.current) {
-						if (music.section.current.perceivedLoudness.min < 0.05) warpReason = "perceivedLoudness.min < 0.05"
-						if (music.section.current.perceivedLoudness.avg < 0.55) warpReason = "perceivedLoudness.avg < 0.55"
+						if (music.section.current.perceivedLoudness.min < 0.1) warpReason = "perceivedLoudness.min < 0.1"
+						if (music.section.current.perceivedLoudness.avg < 0.5) warpReason = "perceivedLoudness.avg < 0.5"
 						if (music.section.current.bpm.avg < 90) warpReason = "bpm.avg < 0.25"
-						debug3 = "perceivedLoudness.min=" + music.section.current.perceivedLoudness.avg
+						// debug3 += "perceivedLoudness.min=" + music.section.current.perceivedLoudness.avg
 
 						// rotateSpeedTarget = Math.min(music.section.current.bpm.avg, 180) / 180
 						if (warpReason) {
@@ -1075,20 +1065,42 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 						debug2 = "no warp reason"
 					}
 
-					debug4 +=
-						" beat confidence = " +
-						music.beat.current?.confidence +
-						". beat loudness = " +
-						music.beat.current?.perceivedLoudness +
-						" avg section loudness = " +
-						music.section.current?.perceivedLoudness.avg
+					if (music.changed.section && (music.section.current?.confidence ?? 0) > 0.4) {
+						const c = music.section.current?.confidence ?? 1
+						const c2 = (music.section.current?.bpm.min ?? 120) / 120
+						const rV = 0.004 * c * c2
+						for (let i = 0; i < rootVelocities.length; i++) {
+							rootVelocities[i] = rV
+						}
+						const tV = 0.004 * c2
+						// for (let i = 0; i < targetVelocities.length; i++) {
+						// 	targetVelocities[i] = tV
+						// }
+						debug6 = "section change! c=" + c + " c2=" + c2 + ". rV=" + rV + ". tV=" + tV
+
+						// smoothness = s
+					}
+					debug4 += " beat confidence = " + music.beat.current?.confidence + ". beat loudness = " + music.beat.current?.perceivedLoudness + " avg section loudness = " + music.section.current?.perceivedLoudness.avg
+
+					const smoothBpm = music.section?.current?.bpm.min ?? 0
+					const smoothLoud = music.section.current?.perceivedLoudness.min ?? 0
+					const bpmRatio = Math.min(1, smoothBpm / 120)
+					const val = 1 - bpmRatio * smoothLoud
+					smoothness = lerp(0.88, 0.99, val)
+					debug7 = "[smooth] bpm: " + smoothBpm + " (r: " + bpmRatio + "). loud: " + smoothLoud + ". val:" + val + ". smoothness: " + smoothness
 				} else {
 					warpEffectSpeedTarget = 0
 					rotateSpeedTarget = 0
 					setRadius(0.5)
-					addOutOfRange()
 				}
 
+				const msPhysicsStart = performance.now()
+				physics(dT)
+				// tweak this!
+				const birth = music?.changed.tatum ? Math.ceil(outOfRangeTargets.size * 0.5 * (music?.tatum.current?.confidence ?? 0.5)) : 0
+				if (birth) debug5 = "dead: " + outOfRangeTargets.size + ". confidence " + music?.tatum.current?.confidence + ". birthed: " + birth
+				regrow(dT, birth)
+				msPhysics = performance.now() - msPhysicsStart
 				render()
 			}
 			masterCtx.drawImage(canvas, 0, 0)
