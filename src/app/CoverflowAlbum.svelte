@@ -62,6 +62,7 @@
 
 	div.selected h1,
 	div.selected h2 {
+		color: white;
 		opacity: 0.95;
 	}
 
@@ -92,9 +93,9 @@
 	h1,
 	h2 {
 		width: var(--size);
-		opacity: 0.2;
-		transition: 0.3s opacity;
-		color: white;
+		opacity: 0.5;
+		transition: 0.3s all;
+		color: grey;
 	}
 
 	h1 {

@@ -4,6 +4,7 @@
 	import type {MusicCollection} from "./musicCollection"
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
 	import {showLibrary} from "./state"
+	import {DEFAULT_ALBUM_ART} from "./config"
 
 	let scale = 1
 	$: albumSize = 600 * scale
@@ -99,6 +100,9 @@
 
 <h1>{startIndex}, {endIndex}, {selectedIndex}, {scrollPosition}</h1>
 
+<!-- without this image, the browser will unload the default image when it hasn't seen it in a while, needing it to be refetch from disk/network, which can be slow and cause the default album art to lag behind others -->
+<img class="preload" src={DEFAULT_ALBUM_ART} alt="preload" />
+
 <style>
 	.outer {
 		user-select: none;
@@ -119,5 +123,12 @@
 		height: 100%;
 		display: flex;
 		flex-flow: row nowrap;
+	}
+
+	.preload {
+		position: fixed;
+		top: -1000px;
+		left: -1000px;
+		opacity: 0;
 	}
 </style>
