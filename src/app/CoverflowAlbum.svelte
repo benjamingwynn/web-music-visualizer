@@ -94,6 +94,7 @@
 		width: var(--size);
 		opacity: 0.2;
 		transition: 0.3s opacity;
+		color: white;
 	}
 
 	h1 {
