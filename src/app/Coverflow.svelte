@@ -3,7 +3,7 @@
 	import type {Writable} from "svelte/store"
 	import type {MusicCollection} from "./musicCollection"
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
-	import {showLibrary} from "./state"
+	import {collection, nowPlayingId, showLibrary} from "./state"
 	import {DEFAULT_ALBUM_ART} from "./config"
 
 	let scale = 1
@@ -11,9 +11,8 @@
 
 	export let pleaseQueueMusic: (files: File[]) => void
 	export let pleaseClearQueue: () => void
-	export let collection: MusicCollection
 
-	$: albums = collection.albums
+	$: albums = $collection?.albums
 
 	let scrollContainer: Element
 	let scrollPosition = 0
@@ -72,37 +71,37 @@
 
 <div bind:this={scrollContainer} class="outer" on:wheel={handleZoom} on:scroll={handleScroll}>
 	<div class="coverflow" style:--size={albumSize + "px"}>
-		{#each Object.values($albums) as album, index}
-			<!-- kinda a hack but just find the first song -->
-			{@const song = album.find((x) => x)}
-			{#if song}
-				<CoverflowAlbum
-					size={albumSize}
-					meta={song.meta}
-					{index}
-					{startIndex}
-					{endIndex}
-					{selectedIndex}
-					trackList={album}
-					onClick={async (isSelected, alt) => {
-						if (isSelected) {
-							$showLibrary = false
-							if (!alt) {
-								pleaseClearQueue()
+		{#if $albums}
+			{#each Object.values($albums) as album, index}
+				<!-- kinda a hack but just find the first song -->
+				{@const song = album.find((x) => x)}
+				{#if song}
+					<CoverflowAlbum
+						size={albumSize}
+						meta={song.meta}
+						{index}
+						{startIndex}
+						{endIndex}
+						{selectedIndex}
+						trackList={album}
+						onClick={async (isSelected, alt) => {
+							if (isSelected) {
+								$showLibrary = false
+								if (!alt) {
+									pleaseClearQueue()
+								}
+								pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
+							} else {
+								const left = index * albumSize
+								scrollContainer.scrollTo({behavior: "smooth", left})
 							}
-							pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
-						} else {
-							const left = index * albumSize
-							scrollContainer.scrollTo({behavior: "smooth", left})
-						}
-					}}
-				/>
-			{/if}
-		{/each}
+						}}
+					/>
+				{/if}
+			{/each}
+		{/if}
 	</div>
 </div>
-
-<h1>{startIndex}, {endIndex}, {selectedIndex}, {scrollPosition}</h1>
 
 <style>
 	.outer {

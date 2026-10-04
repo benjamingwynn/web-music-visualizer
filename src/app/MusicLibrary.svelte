@@ -3,18 +3,17 @@
 	import Coverflow from "./Coverflow.svelte"
 	import {clearAllMetadata, openMusicCollection, type MusicCollection} from "./musicCollection"
 	import MusicLibraryItem from "./MusicLibraryItem.svelte"
-	import {showLibrary} from "./state"
+	import MusicLibraryLoading from "./MusicLibraryLoading.svelte"
+	import {collection, collectionLoadState, showLibrary} from "./state"
 
 	export let pleaseQueueMusic: (files: File[]) => void
 	export let pleaseClearQueue: () => void
-
-	let collection: undefined | MusicCollection = undefined
 
 	let mode: "songs" | "albums" = "albums"
 </script>
 
 <main hidden={!$showLibrary}>
-	{#if !collection}
+	{#if !$collection}
 		{#if "showDirectoryPicker" in window}
 			<div>
 				<h1>please select music directory</h1>
@@ -23,13 +22,13 @@
 			<div>
 				<Button
 					onClick={async () => {
-						collection = await openMusicCollection()
+						$collection = await openMusicCollection()
 					}}>select music directory</Button
 				>
 				<Button
 					onClick={async () => {
 						await clearAllMetadata()
-						collection = await openMusicCollection()
+						$collection = await openMusicCollection()
 					}}>select music directory (clear cache)</Button
 				>
 			</div>
@@ -51,14 +50,15 @@
 		</div>
 		{#if mode === "songs"}
 			<div class="list song-list">
-				{#each collection.songs as song}
+				{#each $collection.songs as song}
 					<MusicLibraryItem {pleaseQueueMusic} handle={song.file} metadata={song.meta}></MusicLibraryItem>
 				{/each}
 			</div>
 		{:else if mode === "albums"}
-			<Coverflow {collection} {pleaseQueueMusic} {pleaseClearQueue}></Coverflow>
+			<Coverflow {pleaseQueueMusic} {pleaseClearQueue}></Coverflow>
 		{/if}
 	{/if}
+	<MusicLibraryLoading />
 	<div>
 		<Button
 			onClick={async () => {
@@ -82,7 +82,7 @@
 		visibility: visible;
 		transition: all 0.35s;
 		align-content: baseline;
-		grid-template-rows: auto 1fr;
+		grid-template-rows: auto 1fr 20em;
 	}
 
 	main[hidden] {

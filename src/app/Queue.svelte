@@ -6,6 +6,7 @@
 	import QueueItem from "./QueueItem.svelte"
 	import Button from "./Button.svelte"
 	import {showLibrary} from "./state.ts"
+	import {DEFAULT_ALBUM_ART} from "./config.ts"
 
 	export let musicCanvas: MusicCanvas
 	export let onSelect: (file: File) => Promise<void>
@@ -129,12 +130,14 @@
 <div class="queue">
 	{#each queue as item}
 		<QueueItem
+			id={item.name}
 			heading={item.name}
 			disabled={locked}
 			subheading={item.type}
 			processing={processing.includes(item)}
 			ready={ready.includes(item)}
 			selected={selected === item}
+			artSrc={DEFAULT_ALBUM_ART}
 			pending={!processing.includes(item) && !ready.includes(item)}
 			onClick={() => {
 				handleSelection(item)

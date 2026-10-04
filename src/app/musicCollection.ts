@@ -4,6 +4,7 @@ import {lazy} from "./lazy.ts"
 import {cache} from "./cache.ts"
 import {probe} from "./probe.ts"
 import {uint8ArrayToBase64, fileToBase64} from "./buffer.ts"
+import {collectionLoadState} from "./state.ts"
 
 export type SongMetadata = {
 	title: string
@@ -35,9 +36,7 @@ export async function clearAllMetadata() {
 	// location.reload()
 }
 
-async function getMetadataFor(path: string, f: FileSystemFileHandle, inherit?: Partial<SongMetadata>): Promise<SongMetadata> {
-	const metaCache = await cache<SongMetadata>("song-metadata")
-
+async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string, f: FileSystemFileHandle, inherit?: Partial<SongMetadata>): Promise<SongMetadata> {
 	console.log("query metadata for", path)
 	// return from cache if available for path
 	const cached = metaCache.get(path)
@@ -45,6 +44,7 @@ async function getMetadataFor(path: string, f: FileSystemFileHandle, inherit?: P
 		console.log("cache hit for", path)
 		return cached
 	}
+	collectionLoadState.set('Getting metadata for "' + path.split("/").at(-1) + '"...')
 
 	console.time("metadata probe")
 
@@ -70,6 +70,8 @@ async function getMetadataFor(path: string, f: FileSystemFileHandle, inherit?: P
 	console.log("[track numbering!!]", rtn.albumName, rtn.title, "::", rtn.track)
 	console.timeEnd("metadata probe")
 	metaCache.set(path, rtn)
+
+	collectionLoadState.set(null) // unset since we're happening async and no more work is happening
 	return rtn
 }
 
@@ -87,8 +89,13 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 	const _albums = {} as Record<string, Song[]>
 	const albums = writable(_albums)
 
+	collectionLoadState.set("Loading cached library data...")
+	const metaCache = await cache<SongMetadata>("song-metadata")
+
 	const walk = async (dirPath: string, dir: FileSystemDirectoryHandle) => {
 		let albumArtwork: null | string = null
+
+		collectionLoadState.set('Searching "' + dirPath + '" for music and cover art...')
 		// look for sibling album art *first*
 		for await (const [key, val] of dir.entries()) {
 			if (val.kind === "file" && key === "cover.jpg") {
@@ -122,7 +129,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 					file: val,
 					meta: lazy(
 						defaultSong,
-						metaQueue(() => getMetadataFor(path, val, albumArtwork ? {albumArtwork} : undefined)),
+						metaQueue(() => getMetadataFor(metaCache, path, val, albumArtwork ? {albumArtwork} : undefined)),
 						(m) => {
 							// this all seems a bit hacky?
 							_albums[m.albumName] = _albums[m.albumName] ?? []
@@ -145,6 +152,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				songs.push(song)
 			}
 		}
+		collectionLoadState.set(null)
 	}
 
 	await walk(".", rootDir)

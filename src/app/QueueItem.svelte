@@ -6,6 +6,14 @@
 	import iconProcessing from "@primer/octicons/build/svg/gear-16.svg"
 	// import iconPending from '@primer/octicons/build/svg/circle-16.svg'
 	import iconPending from "@primer/octicons/build/svg/issue-draft-16.svg"
+	import {collection} from "./state.ts"
+
+	export let id: string
+
+	// use information from our music collection if it's available
+	$: collectionEntry = $collection?.songs.find((x) => x.id === id)
+	$: metaWritable = collectionEntry?.meta ? collectionEntry.meta : undefined
+	$: meta = $metaWritable
 
 	export let heading: string
 	export let subheading: string
@@ -20,10 +28,10 @@
 
 <button class:selected class:ready class:processing type="button" on:click={onClick} {disabled}>
 	<div class="art">
-		<img src={artSrc} alt={heading} />
+		<img src={meta?.albumArtwork ?? artSrc} alt={meta?.albumName ?? heading} />
 	</div>
-	<h1>{heading}</h1>
-	<h2>{subheading}</h2>
+	<h1>{meta?.title ?? heading}</h1>
+	<h2>{meta?.artist ?? subheading}</h2>
 	<div class="icons">
 		{#if selected}
 			<img alt="track is selected" class="icon" src={iconPlay} />
@@ -85,6 +93,11 @@
 		grid-column: 1;
 		aspect-ratio: 1;
 	}
+	.art img {
+		height: 100%;
+		width: 100%;
+	}
+
 	.icons {
 		grid-row: 1 / span 2;
 		grid-column: 3;
@@ -100,7 +113,7 @@
 		margin: 0 0.1em;
 	}
 
-	img {
+	.icon img {
 		height: 1em;
 		display: block;
 	}

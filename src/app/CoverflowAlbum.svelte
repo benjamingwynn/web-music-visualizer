@@ -4,7 +4,7 @@
 	import {DEFAULT_ALBUM_ART} from "./config"
 	import {sleep} from "./sleep"
 	import PlayIcon from "./PlayIcon.svelte"
-	import {nowPlayingId} from "./state"
+	import {nowPlayingId, showLibrary} from "./state"
 
 	export let meta: Writable<SongMetadata>
 	export let index: number
@@ -57,6 +57,11 @@
 	tabindex="0"
 	on:click={async (ev) => {
 		if (clicked) return
+		if (playingThis) {
+			// if we're playing this, just close the ui if we click
+			$showLibrary = false
+			return
+		}
 		if (iAmSelected) {
 			clicked = true
 		}
