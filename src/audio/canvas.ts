@@ -51,7 +51,7 @@ export class MusicCanvas {
 		this.startVisualization([...MusicCanvas.registeredVisualizations.keys()][0])
 	}
 
-	public onNewAudioPlaying() {
+	public stop() {
 		delete this.audioTracker
 	}
 
@@ -137,8 +137,6 @@ export class MusicCanvas {
 		}
 	}
 }
-
-window.MusicCanvas = MusicCanvas
 
 // register the debug visualization
 MusicCanvas.registerVisualization("debug", {

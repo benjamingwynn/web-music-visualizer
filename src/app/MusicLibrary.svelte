@@ -6,6 +6,8 @@
 	import {showLibrary} from "./state"
 
 	export let pleaseQueueMusic: (files: File[]) => void
+	export let pleaseClearQueue: () => void
+
 	let collection: undefined | MusicCollection = undefined
 
 	let mode: "songs" | "albums" = "albums"
@@ -54,7 +56,7 @@
 				{/each}
 			</div>
 		{:else if mode === "albums"}
-			<Coverflow {collection} {pleaseQueueMusic}></Coverflow>
+			<Coverflow {collection} {pleaseQueueMusic} {pleaseClearQueue}></Coverflow>
 		{/if}
 	{/if}
 	<div>

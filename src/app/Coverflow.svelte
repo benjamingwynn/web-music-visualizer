@@ -10,6 +10,7 @@
 	$: albumSize = 600 * scale
 
 	export let pleaseQueueMusic: (files: File[]) => void
+	export let pleaseClearQueue: () => void
 	export let collection: MusicCollection
 
 	$: albums = collection.albums
@@ -83,9 +84,12 @@
 					{endIndex}
 					{selectedIndex}
 					trackList={album}
-					onClick={async (isSelected) => {
+					onClick={async (isSelected, alt) => {
 						if (isSelected) {
 							$showLibrary = false
+							if (!alt) {
+								pleaseClearQueue()
+							}
 							pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
 						} else {
 							const left = index * albumSize

@@ -10,7 +10,7 @@
 	export let endIndex: number
 	export let selectedIndex: number
 	export let trackList: Song[]
-	export let onClick: (isSelected: boolean) => Promise<void>
+	export let onClick: (isSelected: boolean, alt: boolean) => Promise<void>
 	export let size: number
 
 	$: pitchAmount = size * 0.1
@@ -50,13 +50,13 @@
 	class:selected={index === selectedIndex}
 	class:clicked
 	tabindex="0"
-	on:click={async () => {
+	on:click={async (ev) => {
 		if (clicked) return
 		if (iAmSelected) {
 			clicked = true
 		}
 		const timeStarted = Date.now()
-		await onClick(iAmSelected)
+		await onClick(iAmSelected, ev.shiftKey)
 		if (iAmSelected) {
 			const timeTaken = Date.now() - timeStarted
 			const extraDelay = Math.max(0, 300 - timeTaken)

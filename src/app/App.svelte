@@ -60,6 +60,7 @@
 	let prevSong: () => void
 	let openFilePicker: () => void
 	let pleaseQueueMusic: () => void
+	let pleaseClearQueue: () => void
 	onMount(() => {
 		canvas.height = window.innerHeight * renderScale
 		canvas.width = window.innerWidth * renderScale
@@ -74,13 +75,14 @@
 	}
 
 	async function onSelect(file: File) {
-		musicCanvas.onNewAudioPlaying()
+		musicCanvas.stop()
 		const url = URL.createObjectURL(file)
 		audio.src = url
 		audio.play()
 	}
 
 	async function pleaseStopAudio() {
+		musicCanvas.stop()
 		audio.pause()
 		audio.src = ""
 	}
@@ -188,9 +190,9 @@
 
 	<!-- <p>editor is focused? {$editorFocused}</p> -->
 
-	<MusicLibrary {pleaseQueueMusic} />
+	<MusicLibrary {pleaseQueueMusic} {pleaseClearQueue} />
 
-	<Queue {musicCanvas} {onSelect} {onAnalysis} {onAddToQueue} bind:next={nextSong} bind:previous={prevSong} bind:openFilePicker bind:pleaseQueueMusic {pleaseStopAudio} />
+	<Queue {musicCanvas} {onSelect} {onAnalysis} {onAddToQueue} bind:next={nextSong} bind:previous={prevSong} bind:openFilePicker bind:pleaseQueueMusic {pleaseStopAudio} bind:pleaseClearQueue />
 
 	<Options {musicCanvas} />
 </main>

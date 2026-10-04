@@ -21,8 +21,8 @@
 
 	let picker: HTMLInputElement
 
-	const analyses = new Map<File, Promise<Analysis>>()
-	const analysisQueue = pQueue<Analysis>(2)
+	const analyses = new Map<File, Promise<Analysis | null>>()
+	const analysisQueue = pQueue<Analysis | null>(2)
 
 	let musiq: ReturnType<typeof loadMusiq>
 	;(async () => {
@@ -42,6 +42,10 @@
 		const analysisPromise = analyses.get(file)
 		if (!analysisPromise) throw new Error("wtf")
 		const analysis = await analysisPromise
+		if (analysis === null) {
+			console.error("this analysis is not complete, but we were asked to select it!")
+			return
+		}
 		if (file !== selected) {
 			console.warn("*** bailed from analysis callback because song no longer matches ***")
 			return
@@ -56,9 +60,17 @@
 	}
 
 	export const onFiles = async (files: File[]) => {
+		const queueEmpty = queue.length === 0
+		queue = [...queue, ...files]
 		for (const file of files) {
 			const fn = async () => {
 				return analysisQueue(async () => {
+					// if the queue no longer includes this file, skip it
+					if (!queue.includes(file)) {
+						console.warn("skipping processing of stale queue item!", file)
+						return null
+					}
+
 					processing = [...processing, file]
 					// we gotta wait for the analyzer
 					const analyzer = await musiq
@@ -76,10 +88,9 @@
 			analyses.set(file, fn())
 		}
 		// if nothing queued yet then start the song
-		if (queue.length === 0) {
+		if (queueEmpty) {
 			handleSelection(files[0])
 		}
-		queue = [...queue, ...files]
 		onAddToQueue()
 	}
 	export const pleaseQueueMusic = (files: File[]) => {
@@ -102,6 +113,12 @@
 	}
 	export const openFilePicker = () => {
 		picker.click()
+	}
+
+	export const pleaseClearQueue = () => {
+		pleaseStopAudio()
+		queue = []
+		selected = null
 	}
 </script>
 
@@ -132,16 +149,7 @@
 	}}>open library</Button
 >
 
-<Button
-	onClick={async () => {
-		// todo: this is buggy and doesn't work properly - refactor to make this work better
-		pleaseStopAudio()
-		queue = []
-		ready = []
-		processing = []
-		selected = null
-	}}>clear queue</Button
->
+<Button onClick={pleaseClearQueue}>clear queue</Button>
 
 <input type="file" on:change={onchange} multiple bind:this={picker} />
 
