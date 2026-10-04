@@ -156,6 +156,15 @@ MusicCanvas.registerVisualization("debug", {
 		return (dT, music) => {
 			// draw stuff here
 			ctx.clearRect(0, 0, canvas.width, canvas.height)
+			const s = music?.segment.current?.spectrum
+			if (s) {
+				const dx = canvas.width / s.length
+				for (let i = 0; i < s.length; i++) {
+					ctx.fillStyle = `hsl(${i * (360 / s.length)}deg 25% 25%)`
+					const h = s[i] * canvas.height
+					ctx.fillRect(Math.floor(dx * i), Math.floor(canvas.height - h), Math.ceil(dx * (i + 1)), Math.floor(h))
+				}
+			}
 			ctx.fillStyle = "darkorange"
 
 			const cX = canvas.width / 2
