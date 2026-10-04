@@ -6,7 +6,7 @@
 	import MusicLibrary from "./MusicLibrary.svelte"
 	import type {Analysis} from "musiq"
 	import {writable} from "svelte/store"
-	import {showLibrary} from "./state.ts"
+	import {nowPlayingId, showLibrary} from "./state.ts"
 	import QueueItem from "./QueueItem.svelte"
 	import NotChromeWarning from "./NotChromeWarning.svelte"
 	import CodeEditor from "./CodeEditor.svelte"
@@ -78,6 +78,7 @@
 		musicCanvas.stop()
 		const url = URL.createObjectURL(file)
 		audio.src = url
+		$nowPlayingId = file.name
 		audio.play()
 	}
 
@@ -189,6 +190,8 @@
 	</div>
 
 	<!-- <p>editor is focused? {$editorFocused}</p> -->
+
+	<h1>playing={$nowPlayingId}</h1>
 
 	<MusicLibrary {pleaseQueueMusic} {pleaseClearQueue} />
 

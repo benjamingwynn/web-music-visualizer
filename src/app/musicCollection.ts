@@ -15,6 +15,7 @@ export type SongMetadata = {
 }
 
 export type Song = {
+	id: string
 	meta: Writable<SongMetadata>
 	file: FileSystemFileHandle
 }
@@ -117,6 +118,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				if (albumArtwork) defaultSong.albumArtwork = albumArtwork
 				// console.warn("set", val, "as", albumArtwork)
 				const song: Song = {
+					id: key,
 					file: val,
 					meta: lazy(
 						defaultSong,

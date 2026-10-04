@@ -3,6 +3,8 @@
 	import type {Song, SongMetadata} from "./musicCollection"
 	import {DEFAULT_ALBUM_ART} from "./config"
 	import {sleep} from "./sleep"
+	import PlayIcon from "./PlayIcon.svelte"
+	import {nowPlayingId} from "./state"
 
 	export let meta: Writable<SongMetadata>
 	export let index: number
@@ -44,9 +46,12 @@
 	}
 
 	let clicked = false
+
+	$: playingThis = $nowPlayingId === null ? false : Boolean(trackList.find((x) => x?.id === $nowPlayingId))
 </script>
 
 <div
+	class="album"
 	class:selected={index === selectedIndex}
 	class:clicked
 	tabindex="0"
@@ -71,29 +76,35 @@
 			<img class="reflection" alt="" aria-hidden="true" src={artwork} />
 		</div>
 	{/if}
-	<h1>{$meta.albumName}</h1>
+	<div class="title">
+		<div class="badges">
+			<PlayIcon hidden={!playingThis} />
+		</div>
+		<h1>{$meta.albumName}</h1>
+		<div></div>
+	</div>
 	<h2>{$meta.artist}</h2>
 </div>
 
 <style>
-	div {
+	.album {
 		display: grid;
 		scroll-snap-align: center;
 		align-self: center;
 		transition: transform 0.15s;
 	}
 
-	div.selected {
+	.album.selected {
 		z-index: 1;
 	}
 
-	div.selected h1,
-	div.selected h2 {
+	.album.selected h1,
+	.album.selected h2 {
 		color: white;
 		opacity: 0.95;
 	}
 
-	div.clicked {
+	.album.clicked {
 		transform: scale(2.5);
 	}
 
@@ -121,9 +132,28 @@
 		mask-image: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.4));
 	}
 
+	.title {
+		width: var(--size);
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		margin-top: 0.7em;
+	}
+
+	.badges {
+		opacity: 0.4;
+		display: flex;
+		justify-content: end;
+		align-items: center;
+		font-size: 2em;
+		transition: opacity 0.3s;
+	}
+
+	.album.selected .badges {
+		opacity: 1;
+	}
+
 	h1,
 	h2 {
-		width: var(--size);
 		opacity: 0.5;
 		transition:
 			opacity 0.3s,
@@ -133,7 +163,6 @@
 
 	h1 {
 		margin: 0;
-		margin-top: 0.7em;
 		font-size: 2em;
 		text-align: center;
 		z-index: 1;
