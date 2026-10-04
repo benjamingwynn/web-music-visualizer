@@ -1,27 +1,25 @@
 <script lang="ts">
 	import type {Writable} from "svelte/store"
-	import type {MusicCollection, Song, SongMetadata} from "./musicCollection"
+	import type {Song, SongMetadata} from "./musicCollection"
 	import {DEFAULT_ALBUM_ART} from "./config"
 
 	export let meta: Writable<SongMetadata>
-	// export let transform: null | "left" | "right"
 	export let index: number
 	export let startIndex: number
 	export let endIndex: number
 	export let selectedIndex: number
 	export let trackList: Song[]
-
 	export let onClick: () => Promise<void>
+	export let size: number
 
-	export let size
+	const PITCH_AMOUNT = size * 0.1
 
 	/** browser doesn't like it when we matrix3d hundreds of things so only apply the transform when we're this many out of range */
 	const ADDITIONAL_RENDER_RANGE = 3
 
 	$: inRenderRange = index >= startIndex - ADDITIONAL_RENDER_RANGE && index <= endIndex + ADDITIONAL_RENDER_RANGE
-	$: matrix = !inRenderRange || index === selectedIndex ? "none" : "" + (index > selectedIndex ? keystoneLeft(size, size, PITCH_AMOUNT) : keystoneRight(size, size, PITCH_AMOUNT))
-
-	const PITCH_AMOUNT = 60
+	$: matrix = !inRenderRange || index === selectedIndex ? "none" : index > selectedIndex ? keystoneLeft(size, size, PITCH_AMOUNT) : keystoneRight(size, size, PITCH_AMOUNT)
+	$: artwork = $meta.albumArtwork ?? DEFAULT_ALBUM_ART
 
 	// Right edge pinched, left edge fixed.
 	// d > 0: top-right moves down d px, bottom-right moves up d px.
@@ -46,7 +44,10 @@
 
 <div class:selected={index === selectedIndex} style:--size={size + "px"} tabindex="0" on:click={onClick}>
 	{#if inRenderRange}
-		<img alt="artwork" src={$meta.albumArtwork ?? DEFAULT_ALBUM_ART} style:transform={matrix} />
+		<div class="art" style:transform={matrix}>
+			<img alt="artwork" src={artwork} />
+			<img class="reflection" alt="" aria-hidden="true" src={artwork} />
+		</div>
 	{/if}
 	<h1>{$meta.albumName}</h1>
 	<h2>{$meta.artist}</h2>
@@ -64,17 +65,28 @@
 		opacity: 0.95;
 	}
 
-	img {
+	.art {
+		position: relative;
 		height: var(--size);
 		width: var(--size);
-		/*
-			todo: remove box-reflect and replace with a fake image for the reflection
-			we can use grid to zero out its box model height
-			i tried to do this by modifying the matrix but it resulted in the reflection "jumping around"
-		*/
-		-webkit-box-reflect: below 1px linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.4));
 		transform-origin: 0 0;
-		transition: 0.3s all;
+		transition: transform 0.3s;
+	}
+
+	.art img {
+		display: block;
+		height: 100%;
+		width: 100%;
+	}
+
+	.art img.reflection {
+		position: absolute;
+		top: calc(100% + 1px);
+		left: 0;
+		transform: scaleY(-1);
+		pointer-events: none;
+		-webkit-mask-image: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.4));
+		mask-image: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.4));
 	}
 
 	h1,

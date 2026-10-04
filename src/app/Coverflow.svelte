@@ -4,7 +4,8 @@
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
 	import {showLibrary} from "./state"
 
-	const ALBUM_SIZE = 700
+	let scale = 1
+	$: albumSize = 600 * scale
 
 	export let pleaseQueueMusic: (files: File[]) => void
 	export let collection: MusicCollection
@@ -15,8 +16,8 @@
 	let scrollContainer: Element
 	let scrollPosition = 0
 
-	$: albumsPerPage = (scrollContainer?.clientWidth ?? 0) / ALBUM_SIZE
-	$: selectedIndex = Math.floor(scrollPosition / ALBUM_SIZE)
+	$: albumsPerPage = (scrollContainer?.clientWidth ?? 0) / albumSize
+	$: selectedIndex = Math.floor(scrollPosition / albumSize)
 	$: startIndex = selectedIndex - Math.floor(albumsPerPage / 2)
 	$: endIndex = selectedIndex + Math.floor(albumsPerPage / 2)
 </script>
@@ -26,6 +27,13 @@
 	<div
 		bind:this={scrollContainer}
 		class="outer"
+		on:wheel={(ev) => {
+			if (!ev.ctrlKey) return // only pinch, not normal scroll
+			ev.preventDefault()
+
+			scale -= ev.deltaY * 0.01 // pinch out = positive scale change
+			scale = Math.min(Math.max(scale, 0.5), 2) // clamp
+		}}
 		on:scroll={(ev) => {
 			// console.log(ev, scrollContainer.scrollLeft, scrollContainer.clientWidth)
 			scrollPosition = scrollContainer?.scrollLeft
@@ -37,7 +45,7 @@
 				{@const song = album.find((x) => x)}
 				{#if song}
 					<CoverflowAlbum
-						size={ALBUM_SIZE}
+						size={albumSize}
 						meta={song.meta}
 						{index}
 						{startIndex}
@@ -49,7 +57,7 @@
 								$showLibrary = false
 								pleaseQueueMusic(await Promise.all(album.filter((x) => x).map((x) => x.file.getFile())))
 							} else {
-								const left = index * ALBUM_SIZE
+								const left = index * albumSize
 								scrollContainer.scrollTo({behavior: "smooth", left})
 							}
 						}}
