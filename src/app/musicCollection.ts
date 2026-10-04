@@ -78,18 +78,25 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 }
 
 const UNKNOWN_SONG: Omit<SongMetadata, "title"> = {albumName: "Unknown Album", artist: "Unknown Artist", track: 0}
-
 export async function openMusicCollection(): Promise<MusicCollection> {
 	const rootDir = await showDirectoryPicker({mode: "read", startIn: "music"})
 
 	console.time("walk music collection")
 	console.log(rootDir)
 
-	let u = 0
 	const songs: Song[] = []
 	const walking: Promise<void>[] = []
 	const _albums = {} as Record<string, Song[]>
 	const albums = writable(_albums)
+
+	let pending = 0
+	let walkDone = false
+	const settle = () => {
+		if (walkDone && pending === 0) {
+			console.warn("** all work done **")
+			collectionLoadState.set(null)
+		}
+	}
 
 	collectionLoadState.set("Loading cached library data...")
 	await tick() // ^ let this always update
@@ -116,7 +123,6 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 			const path = dirPath + "/" + key
 			// console.log("*", key, val)
 			if (val.kind === "directory") {
-				// .
 				// console.log("*open directory*", path)
 				walking.push(walk(path, val))
 			} else {
@@ -127,44 +133,50 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				}
 				const defaultSong = {...UNKNOWN_SONG, title: key}
 				if (albumArtwork) defaultSong.albumArtwork = albumArtwork
-				// console.warn("set", val, "as", albumArtwork)
+
+				pending++
+				const metaPromise = metaQueue(() => getMetadataFor(metaCache, path, val, albumArtwork ? {albumArtwork} : undefined))
+				metaPromise.catch(() => {
+					pending--
+					settle()
+				})
+
 				const song: Song = {
 					id: key,
 					file: val,
-					meta: lazy(
-						defaultSong,
-						metaQueue(() => getMetadataFor(metaCache, path, val, albumArtwork ? {albumArtwork} : undefined)),
-						(m) => {
-							// this all seems a bit hacky?
-							_albums[m.albumName] = _albums[m.albumName] ?? []
-							if (_albums[m.albumName][m.track]) {
-								console.warn("duplicate track detected!! @", m.track, "for", m.title, "on", m.albumName)
-								_albums[m.albumName][m.track + 99] = song // ?
-							} else {
-								_albums[m.albumName][m.track] = song
-								console.log("for", m.albumName, "push", m.title, "to spot", m.track)
-							}
-							// _albums[m.albumName] = _albums[m.albumName].filter((x) => x)
-							albums.set(
-								// sort before setting, by album name
-								Object.fromEntries(Object.entries(_albums).sort(([a], [b]) => a.localeCompare(b)))
-							)
-							console.log("add to album!", m.albumName, m.track)
+					meta: lazy(defaultSong, metaPromise, (m) => {
+						collectionLoadState.set('Adding "' + m.title + '" to album...')
 
-							collectionLoadState.set(null)
+						const k = m.albumArtist + "::" + m.albumName
+						_albums[k] = _albums[k] ?? []
+						// having the album be an array with holes in it kinda sucks and is hacky
+						if (_albums[k][m.track]) {
+							// this is a bit hacky
+							console.warn("duplicate track detected!! @", m.track, "for", m.title, "on", m.albumName)
+							_albums[k][m.track + 99] = song // ?
+						} else {
+							_albums[k][m.track] = song
+							console.log("for", m.albumName, "push", m.title, "to spot", m.track)
 						}
-					),
+						albums.set(Object.fromEntries(Object.entries(_albums).sort(([a], [b]) => a.localeCompare(b))))
+						console.log("add to album!", m.albumName, m.track)
+
+						pending--
+						settle()
+					}),
 				}
 				collectionLoadState.set('Found song "' + key + '"')
 				songs.push(song)
 			}
 		}
-		// collectionLoadState.set(null)
 	}
 
 	await walk(".", rootDir)
 
 	await Promise.allSettled(walking)
+
+	walkDone = true
+	settle()
 
 	const collection: MusicCollection = {
 		albums,

@@ -3,7 +3,7 @@
 </script>
 
 <div hidden={!$collectionLoadState}>
-	<h1>{$collectionLoadState ?? "Your library has been loaded."}</h1>
+	<h1>{$collectionLoadState ?? ""}</h1>
 	<span class="o">
 		<span class="i"></span>
 	</span>
