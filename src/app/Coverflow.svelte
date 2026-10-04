@@ -1,4 +1,5 @@
 <script lang="ts">
+	import {tick} from "svelte"
 	import type {Writable} from "svelte/store"
 	import type {MusicCollection} from "./musicCollection"
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
@@ -10,7 +11,6 @@
 	export let pleaseQueueMusic: (files: File[]) => void
 	export let collection: MusicCollection
 
-	$: update = collection.update
 	$: albums = collection.albums
 
 	let scrollContainer: Element
@@ -20,20 +20,35 @@
 	$: selectedIndex = Math.floor(scrollPosition / albumSize)
 	$: startIndex = selectedIndex - Math.floor(albumsPerPage / 2)
 	$: endIndex = selectedIndex + Math.floor(albumsPerPage / 2)
+
+	async function handleZoom(ev: WheelEvent) {
+		if (!ev.ctrlKey) return // only pinch, not normal scroll
+		ev.preventDefault()
+
+		const nextScale = Math.min(Math.max(scale - ev.deltaY * 0.01, 0.5), 2)
+		if (nextScale === scale) return
+
+		const rect = scrollContainer.getBoundingClientRect()
+		const pointerX = ev.clientX - rect.left
+		const spacer = scrollContainer.clientWidth / 2
+
+		const logicalX = (scrollContainer.scrollLeft + pointerX - spacer) / albumSize
+
+		scale = nextScale
+
+		// wait for the new album size / scroll width to be laid out..
+		await tick()
+
+		//...keep the same logical point beneath the cursor/fingers with math
+		scrollContainer.scrollLeft = spacer + logicalX * albumSize - pointerX
+	}
 </script>
 
 <div
 	bind:this={scrollContainer}
 	class="outer"
-	on:wheel={(ev) => {
-		if (!ev.ctrlKey) return // only pinch, not normal scroll
-		ev.preventDefault()
-
-		scale -= ev.deltaY * 0.01 // pinch out = positive scale change
-		scale = Math.min(Math.max(scale, 0.5), 2) // clamp
-	}}
+	on:wheel={handleZoom}
 	on:scroll={(ev) => {
-		// console.log(ev, scrollContainer.scrollLeft, scrollContainer.clientWidth)
 		scrollPosition = scrollContainer?.scrollLeft
 	}}
 >
