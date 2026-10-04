@@ -50,19 +50,21 @@
 	$: playingThis = $nowPlayingId === null ? false : Boolean(trackList.find((x) => x?.id === $nowPlayingId))
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
+	role="button"
 	class="album"
 	class:selected={index === selectedIndex}
 	class:clicked
 	tabindex="0"
 	on:click={async (ev) => {
 		if (clicked) return
-		if (playingThis) {
-			// if we're playing this, just close the ui if we click
-			$showLibrary = false
-			return
-		}
 		if (iAmSelected) {
+			if (playingThis) {
+				// if we're playing this, just close the ui if we click
+				$showLibrary = false
+				return
+			}
 			clicked = true
 		}
 		const timeStarted = Date.now()
@@ -97,6 +99,11 @@
 		scroll-snap-align: center;
 		align-self: center;
 		transition: transform 0.15s;
+		outline: none;
+	}
+
+	.alum:focus {
+		outline: none;
 	}
 
 	.album.selected {

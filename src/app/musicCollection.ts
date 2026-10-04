@@ -5,6 +5,7 @@ import {cache} from "./cache.ts"
 import {probe} from "./probe.ts"
 import {uint8ArrayToBase64, fileToBase64} from "./buffer.ts"
 import {collectionLoadState} from "./state.ts"
+import {tick} from "svelte"
 
 export type SongMetadata = {
 	title: string
@@ -38,14 +39,15 @@ export async function clearAllMetadata() {
 
 async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string, f: FileSystemFileHandle, inherit?: Partial<SongMetadata>): Promise<SongMetadata> {
 	console.log("query metadata for", path)
+	collectionLoadState.set('Getting metadata for "' + path.split("/").at(-1) + '"...')
 	// return from cache if available for path
 	const cached = metaCache.get(path)
 	if (cached) {
 		console.log("cache hit for", path)
 		return cached
 	}
-	collectionLoadState.set('Getting metadata for "' + path.split("/").at(-1) + '"...')
 
+	collectionLoadState.set('Extracting metadata for "' + path.split("/").at(-1) + '"...')
 	console.time("metadata probe")
 
 	let biggestImage = inherit?.albumArtwork
@@ -71,7 +73,7 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 	console.timeEnd("metadata probe")
 	metaCache.set(path, rtn)
 
-	collectionLoadState.set(null) // unset since we're happening async and no more work is happening
+	// collectionLoadState.set(null) // unset since we're happening async and no more work is happening
 	return rtn
 }
 
@@ -90,6 +92,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 	const albums = writable(_albums)
 
 	collectionLoadState.set("Loading cached library data...")
+	await tick() // ^ let this always update
 	const metaCache = await cache<SongMetadata>("song-metadata")
 
 	const walk = async (dirPath: string, dir: FileSystemDirectoryHandle) => {
@@ -101,6 +104,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 			if (val.kind === "file" && key === "cover.jpg") {
 				const path = dirPath + "/" + key
 				console.warn("loading album art from", path)
+				collectionLoadState.set('Loading cover art from "' + dirPath + '"...')
 				const file = await val.getFile()
 				const b64 = await fileToBase64(file)
 				const url = "data:image/jpeg;base64," + b64
@@ -146,13 +150,16 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 								Object.fromEntries(Object.entries(_albums).sort(([a], [b]) => a.localeCompare(b)))
 							)
 							console.log("add to album!", m.albumName, m.track)
+
+							collectionLoadState.set(null)
 						}
 					),
 				}
+				collectionLoadState.set('Found song "' + key + '"')
 				songs.push(song)
 			}
 		}
-		collectionLoadState.set(null)
+		// collectionLoadState.set(null)
 	}
 
 	await walk(".", rootDir)
