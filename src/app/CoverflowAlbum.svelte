@@ -94,7 +94,9 @@
 	h2 {
 		width: var(--size);
 		opacity: 0.5;
-		transition: 0.3s all;
+		transition:
+			opacity 0.3s,
+			color 0.3s;
 		color: grey;
 	}
 

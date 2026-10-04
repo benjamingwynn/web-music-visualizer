@@ -11,15 +11,15 @@
 	import NotChromeWarning from "./NotChromeWarning.svelte"
 	import CodeEditor from "./CodeEditor.svelte"
 	import LoadCode from "./LoadCode.svelte"
+	import {DEFAULT_ALBUM_ART} from "./config.ts"
 
 	const DEFAULT_LOAD_LIST = [
-		// "/visualizations/chart.ts",
+		// .
 		"/visualizations/dotsAndLines.ts",
 		"/visualizations/growths.ts",
 		"/visualizations/needles.ts",
 		"/visualizations/particleSymphony.ts",
 		"/visualizations/ps1.ts",
-		"/visualizations/livingDotsAndLines.ts",
 		"/visualizations/sonicBloom.ts",
 		"/visualizations/vortex.ts",
 		"/visualizations/chart.ts",
@@ -201,6 +201,9 @@
 	<LoadCode hidden={!$showVisualizationUrl.includes(url)} {url} />
 {/each}
 
+<!-- without this image, the browser will unload the default image when it hasn't seen it in a while, needing it to be refetch from disk/network, which can be slow and cause the default album art to lag behind others -->
+<img class="preload" src={DEFAULT_ALBUM_ART} alt="preload" />
+
 <style>
 	:global(html, body) {
 		height: 100%;
@@ -254,5 +257,12 @@
 		left: 0;
 		height: 10em;
 		background: rgba(0, 255, 0, 0.5);
+	}
+
+	.preload {
+		position: fixed;
+		top: -1000px;
+		left: -1000px;
+		opacity: 0;
 	}
 </style>
