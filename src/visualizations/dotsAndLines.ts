@@ -1,4 +1,4 @@
-import {MusicCanvas} from "../audio/canvas.ts"
+import {MusicCanvas} from "api"
 
 /** using a 0-1 float picks from the defined range */
 function lerp(min: number, max: number, inputZeroToOne: number) {

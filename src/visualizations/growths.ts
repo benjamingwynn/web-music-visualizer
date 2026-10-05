@@ -1,3 +1,5 @@
+import {MusicCanvas} from "api"
+
 MusicCanvas.registerVisualization("growths", {
 	info: {
 		name: "Doodle Flowers",
@@ -203,17 +205,7 @@ MusicCanvas.registerVisualization("growths", {
 					const pickedColor = candidates[Math.floor(candidates.length * Math.random())] ?? "white"
 					const maxX = maxXPer * (i + 1)
 					const minX = maxXPer * i
-					plants.add(
-						new Growth(
-							minX + Math.random() * (maxX - minX),
-							Math.max(1 - music.segment.current.rmsEnergy, 0.3) * 0.7 + Math.random() * 0.3,
-							(music.beat.current.bpm / 60) * 1000,
-							pickedColor,
-							music.beat.current.perceivedLoudness,
-							music.segment.current.deltaRms * 0.15,
-							music.segment.current.perceivedLoudness
-						)
-					)
+					plants.add(new Growth(minX + Math.random() * (maxX - minX), Math.max(1 - music.segment.current.rmsEnergy, 0.3) * 0.7 + Math.random() * 0.3, (music.beat.current.bpm / 60) * 1000, pickedColor, music.beat.current.perceivedLoudness, music.segment.current.deltaRms * 0.15, music.segment.current.perceivedLoudness))
 				}
 			}
 		}

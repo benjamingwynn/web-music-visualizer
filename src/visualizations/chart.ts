@@ -1,4 +1,4 @@
-import {MusicCanvas} from "../audio/canvas.ts"
+import {MusicCanvas} from "api"
 
 MusicCanvas.registerVisualization("chart", {
 	info: {

@@ -14,6 +14,9 @@
 		"resolveJsonModule": true,
 		"noEmit": true,
 		"verbatimModuleSyntax": true,
+		"paths": {
+			"api": ["./src/audio/api.ts"]
+		},
 		"types": ["swes/types.d.ts", "@webgpu/types", "wicg-file-system-access"]
 	},
 	"include": ["src"],

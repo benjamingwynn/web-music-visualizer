@@ -3,25 +3,9 @@ import {createAudioTracker, type AudioTracker, type AudioTrackerContext} from ".
 export {type AudioTrackerContext}
 import {writable} from "svelte/store"
 import packageJson from "../../package.json" with {type: "json"}
+import type {Visualization, VisualizationRender} from "./types.ts"
 export type {DetectedBeat, DetectedSection, DetectedSegment, PositionEstimate}
 //
-
-type VisualizationRender = (deltaTime: number, music: undefined | AudioTrackerContext) => void
-type VisualizationWork = (canvas: HTMLCanvasElement, signal: AbortSignal) => VisualizationRender
-
-type VisualizationInfo = {
-	author: string
-	name?: string
-	description?: string
-	gpu?: "webgpu"
-	rating?: number
-}
-
-type Visualization = {
-	does: VisualizationWork
-	info: VisualizationInfo
-	url?: string
-}
 
 export class MusicCanvas {
 	public currentVisualizationId!: string

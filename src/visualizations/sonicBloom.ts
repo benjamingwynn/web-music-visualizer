@@ -1,11 +1,10 @@
-import {MusicCanvas} from "../audio/canvas.ts"
+import {MusicCanvas} from "api"
 
 MusicCanvas.registerVisualization("sonic-bloom", {
 	info: {
 		name: "Sonic Bloom",
 		author: "Gemini 2.5 flash",
-		description:
-			"An organic visualization where abstract flora blossoms and reacts to the music's rhythm, dynamics, and energy shifts. Watch as vibrant petals unfurl and contract, their size and color dictated by the song's energy spectrum and overall loudness.",
+		description: "An organic visualization where abstract flora blossoms and reacts to the music's rhythm, dynamics, and energy shifts. Watch as vibrant petals unfurl and contract, their size and color dictated by the song's energy spectrum and overall loudness.",
 		rating: 4,
 	},
 	does: (canvas) => {

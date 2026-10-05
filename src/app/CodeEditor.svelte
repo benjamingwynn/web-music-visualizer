@@ -5,11 +5,6 @@
 	import tsBlankSpace from "ts-blank-space"
 	import Window from "./Window.svelte"
 
-	// todo: this is actually quite difficult/complicated, we need to extract just the relevant types for doing MusicCanvas.register and pop them in here:
-	const EXTRA_TYPES = `
-		// ...
-	`
-
 	const editorFocused = getContext<Writable<boolean>>("editorFocused")
 
 	const showVisualizationUrl = getContext<Writable<string[] | undefined>>("showVisualizationUrl")
@@ -18,8 +13,6 @@
 	let immediatelyEval = true
 
 	let container: HTMLElement
-	// var defaultCode = defaultText
-	// var jsCode = localStorage._editorValue ?? defaultCode
 	export let code: string
 	export let title: string
 	export let onChange = (code: string) => {}
@@ -96,34 +89,35 @@
 					}
 				},
 			}
+		}
 
-			// Add additional d.ts files to the JavaScript language service and change.
-			// Also change the default compilation options.
-			// The sample below shows how a class Facts is declared and introduced
-			// to the system and how the compiler is told to use ES6 (target=2).
-
+		// async fork to go get the backend types and add them into the editor
+		;(async () => {
+			const ts = monaco.languages.typescript
 			// validation settings
-			monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-				noSemanticValidation: true,
+			ts.typescriptDefaults.setDiagnosticsOptions({
+				noSemanticValidation: false,
 				noSyntaxValidation: false,
 			})
 
+			console.log("fetching types from backend...")
+			const musiqTypes = await (await fetch("/musiq/dist/musiq.d.ts")).text()
+			const ourTypes = await (await fetch("/api.d.ts")).text()
+			console.log("got backend types!")
+
 			// compiler options
-			monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-				target: monaco.languages.typescript.ScriptTarget.ES2015,
+			ts.typescriptDefaults.setCompilerOptions({
+				target: ts.ScriptTarget.ES2020,
+				module: ts.ModuleKind.ESNext,
+				moduleResolution: ts.ModuleResolutionKind.NodeJs,
 				allowNonTsExtensions: true,
+				allowUmdGlobalAccess: true,
 			})
 
-			// extra libraries
-			var libSource = EXTRA_TYPES
-			console.log("types:", libSource)
-			// var libSource = ["declare class Facts {", "    /**", "     * Returns the next fact", "     */", "    static next():string", "}"].join("\n")
-			var libUri = "ts:system.d.ts"
-			monaco.languages.typescript.javascriptDefaults.addExtraLib(libSource, libUri)
-			// When resolving definitions and references, the editor will try to use created models.
-			// Creating a model for the library allows "peek definition/references" commands to work with the library.
-			monaco.editor.createModel(libSource, "typescript", monaco.Uri.parse(libUri))
-		}
+			ts.typescriptDefaults.addExtraLib(musiqTypes, "file:///node_modules/musiq/index.d.ts")
+
+			ts.typescriptDefaults.addExtraLib(ourTypes, "file:///node_modules/MusicCanvas/index.d.ts")
+		})()
 
 		editor = monaco.editor.create(container, {
 			value: code,

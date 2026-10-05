@@ -1,3 +1,5 @@
+import {MusicCanvas} from "api"
+
 MusicCanvas.registerVisualization("ps1", {
 	info: {
 		name: "80s Shape Emulator",
@@ -125,16 +127,7 @@ MusicCanvas.registerVisualization("ps1", {
 
 			function addThing(offset: number, pickedColor: string) {
 				if (music?.section.current) {
-					things.add(
-						new Thing(
-							offset,
-							music.section.current.perceivedLoudness.avg * 0.001,
-							music?.section.current?.bpm.avg * 0.005,
-							(music.section.current.index % 5) + 3,
-							pickedColor,
-							music.section.current.perceivedLoudness.min > 0.2
-						)
-					)
+					things.add(new Thing(offset, music.section.current.perceivedLoudness.avg * 0.001, music?.section.current?.bpm.avg * 0.005, (music.section.current.index % 5) + 3, pickedColor, music.section.current.perceivedLoudness.min > 0.2))
 				} else {
 					things.add(new Thing(offset))
 				}

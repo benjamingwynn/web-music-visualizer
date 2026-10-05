@@ -1,4 +1,4 @@
-import {MusicCanvas} from "../audio/canvas.ts"
+import {MusicCanvas} from "api"
 
 MusicCanvas.registerVisualization("particle_symphony", {
 	info: {
@@ -218,13 +218,7 @@ MusicCanvas.registerVisualization("particle_symphony", {
 			} else {
 				// Default behavior when no music
 				if (Math.random() < 0.1) {
-					particles.push(
-						new Particle(
-							Math.random() * canvas.width,
-							Math.random() * canvas.height,
-							["low", "mid", "high"][Math.floor(Math.random() * 3)] as "low" | "mid" | "high"
-						)
-					)
+					particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height, ["low", "mid", "high"][Math.floor(Math.random() * 3)] as "low" | "mid" | "high"))
 				}
 			}
 

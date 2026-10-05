@@ -14,19 +14,6 @@
 	import {DEFAULT_ALBUM_ART, HIDE_UI_AFTER} from "./config.ts"
 	import {releaseWakeLock, requestWakeLock} from "./wakelock.ts"
 
-	const DEFAULT_LOAD_LIST = [
-		// .
-		"/visualizations/dotsAndLines.ts",
-		"/visualizations/growths.ts",
-		"/visualizations/needles.ts",
-		"/visualizations/particleSymphony.ts",
-		"/visualizations/ps1.ts",
-		"/visualizations/sonicBloom.ts",
-		"/visualizations/vortex.ts",
-		"/visualizations/chart.ts",
-		"/visualizations/debug.ts",
-	]
-
 	const editorFocused = writable(false)
 	setContext("editorFocused", editorFocused) //<Writable<boolean>>("editorFocused")
 
@@ -54,7 +41,18 @@
 	let userLoadList = localStorage.userLoadList ? JSON.parse(localStorage.userLoadList) : []
 	$: localStorage.userLoadList = JSON.stringify(userLoadList)
 	let loadList: string[]
-	$: loadList = [...DEFAULT_LOAD_LIST, ...userLoadList]
+	$: loadList = [...userLoadList]
+
+	// async fork to go fetch the list of available visualizations dropped in by the build system
+	fetch("/list.txt").then(async (f) => {
+		loadList = [
+			...loadList,
+			...(await f.text())
+				.trim()
+				.split("\n")
+				.map((x) => `/visualizations/${x}`),
+		]
+	})
 
 	let nextSong: () => void
 	let prevSong: () => void
