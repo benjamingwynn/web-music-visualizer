@@ -91,7 +91,6 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 	console.log(rootDir)
 
 	const songs: Song[] = []
-	const walking: Promise<void>[] = []
 	const _albums = {} as Record<string, Song[]>
 	const albums = writable(_albums)
 
@@ -115,7 +114,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 		collectionLoadState.set('Searching "' + dirPath + '" for music and cover art...')
 		// look for sibling album art *first*
 		for await (const [key, val] of dir.entries()) {
-			if (val.kind === "file" && key === "cover.jpg") {
+			if (val.kind === "file" && ["cover.jpg", "album.jpg", "folder.jpg", "front.jpg", "cover.png", "album.png", "folder.png", "front.png"].includes(key)) {
 				const path = dirPath + "/" + key
 				console.warn("loading album art from", path)
 				collectionLoadState.set('Loading cover art from "' + dirPath + '"...')
@@ -125,6 +124,8 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				albumArtwork = albumArt.put(url)
 			}
 		}
+
+		const walking: Promise<void>[] = []
 
 		for await (const [key, val] of dir.entries()) {
 			const path = dirPath + "/" + key
@@ -176,11 +177,11 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				songs.push(song)
 			}
 		}
+
+		await Promise.allSettled(walking)
 	}
 
 	await walk(".", rootDir)
-
-	await Promise.allSettled(walking)
 
 	walkDone = true
 	settle()
