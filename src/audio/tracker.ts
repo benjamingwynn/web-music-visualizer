@@ -32,8 +32,11 @@ export function createAudioTracker(analysis: Analysis) {
 
 	const recalculateIndexes = (time: number) => {
 		console.warn("hit recalculateIndexes for time", time)
-		// todo: optimize by looking forward first instead of looking from the start
-		currentIndexes = {beat: -1, section: -1, tatum: -1, segment: -1}
+
+		currentIndexes.beat = -1
+		currentIndexes.section = -1
+		currentIndexes.tatum = -1
+		currentIndexes.segment = -1
 
 		while (analysis.beats[currentIndexes.beat + 1] && analysis.beats[currentIndexes.beat + 1].start <= time) currentIndexes.beat++
 		while (analysis.sections[currentIndexes.section + 1] && analysis.sections[currentIndexes.section + 1].start <= time) currentIndexes.section++
