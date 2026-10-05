@@ -29,14 +29,14 @@ MusicCanvas.registerVisualization("waves", {
 			// figure out which key has most confidence
 			const maxConf = music?.section.current?.keys.reduce((acc, v) => (v > acc ? v : acc), 0)
 			const k = music?.section.current?.keys.findIndex((x) => x === maxConf) ?? 0
-			targetH = ((k / 24) * 360 + 120) % 360
-			const H_RATE = 0.01
+			targetH = (k / 24) * 360 + 120 + (music?.section?.current?.index ?? 0) * 31
+			const H_RATE = 0.04
 			if (h < targetH) {
 				h += H_RATE * dt
 			} else if (h > targetH) {
 				h -= H_RATE * dt
 			}
-			ctx.strokeStyle = `hsl(${h}deg, 82%, 59%)`
+			ctx.strokeStyle = `hsl(${h % 360}deg, 82%, 59%)`
 
 			ctx.beginPath()
 
