@@ -6,11 +6,12 @@ import {probe} from "./probe.ts"
 import {uint8ArrayToBase64, fileToBase64} from "./buffer.ts"
 import {collectionLoadState} from "./state.ts"
 import {tick} from "svelte"
+import {b64Cache} from "./b64Cache.ts"
 
 export type SongMetadata = {
 	title: string
 	albumName: string
-	albumArtwork?: string
+	albumArtwork?: number
 	albumArtist?: string
 	track: number
 	artist: string
@@ -33,6 +34,7 @@ const metaQueue = pQueue<SongMetadata>(10)
 // const metaCache = new Map<string, SongMetadata>()
 
 export async function clearAllMetadata() {
+	;(await cache<SongMetadata>("b64:album-art")).clear()
 	;(await cache<SongMetadata>("song-metadata")).clear()
 	// location.reload()
 }
@@ -46,22 +48,25 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 		console.log("cache hit for", path)
 		return cached
 	}
+	const albumArt = await b64Cache("album-art")
 
 	collectionLoadState.set('Extracting metadata for "' + path.split("/").at(-1) + '"...')
 	console.time("metadata probe")
 
-	let biggestImage = inherit?.albumArtwork
+	let biggestImageNumber = inherit?.albumArtwork
+	let biggestImage = biggestImageNumber ? albumArt.get(biggestImageNumber) : null
 	const probed = await probe(await f.getFile())
 	for (const picture of probed.common.picture ?? []) {
 		const artUrl = `data:${picture.format};base64,${uint8ArrayToBase64(picture.data)}`
 		if (!biggestImage || artUrl.length > biggestImage.length) {
 			biggestImage = artUrl
+			biggestImageNumber = albumArt.put(artUrl)
 			console.log("using embedded artwork")
 		}
 	}
 	const rtn: SongMetadata = {
 		...inherit,
-		albumArtwork: biggestImage,
+		albumArtwork: biggestImageNumber,
 		albumName: probed.common.album ?? "Unidentified Album",
 		albumArtist: probed.common.albumartist ?? probed.common.artist ?? "Unidentified Artist",
 		artist: probed.common.artist ?? "Unidentified Artist",
@@ -102,9 +107,10 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 	collectionLoadState.set("Loading cached library data...")
 	await tick() // ^ let this always update
 	const metaCache = await cache<SongMetadata>("song-metadata")
+	const albumArt = await b64Cache("album-art")
 
 	const walk = async (dirPath: string, dir: FileSystemDirectoryHandle) => {
-		let albumArtwork: null | string = null
+		let albumArtwork: null | number = null
 
 		collectionLoadState.set('Searching "' + dirPath + '" for music and cover art...')
 		// look for sibling album art *first*
@@ -116,7 +122,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				const file = await val.getFile()
 				const b64 = await fileToBase64(file)
 				const url = "data:image/jpeg;base64," + b64
-				albumArtwork = url
+				albumArtwork = albumArt.put(url)
 			}
 		}
 

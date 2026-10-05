@@ -5,6 +5,7 @@
 	import {sleep} from "./sleep"
 	import PlayIcon from "./PlayIcon.svelte"
 	import {nowPlayingId, showLibrary} from "./state"
+	import {b64Cache} from "./b64Cache"
 
 	export let key: string
 	export let meta: Writable<SongMetadata>
@@ -83,8 +84,16 @@
 >
 	{#if inRenderRange}
 		<div class="art" style:transform={matrix} class:animate={!zooming}>
-			<img alt="artwork" src={artwork} />
-			<img class="reflection" alt="" aria-hidden="true" src={artwork} />
+			{#if typeof artwork === "number"}
+				{#await b64Cache("album-art") then artCache}
+					{@const src = artCache.get(artwork)}
+					<img alt="artwork" {src} />
+					<img class="reflection" alt="" aria-hidden="true" {src} />
+				{/await}
+			{:else}
+				<img alt="artwork" src={artwork} />
+				<img class="reflection" alt="" aria-hidden="true" src={artwork} />
+			{/if}
 		</div>
 	{/if}
 	<div class="title">

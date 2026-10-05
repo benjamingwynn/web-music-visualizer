@@ -8,6 +8,7 @@
 	import iconPending from "@primer/octicons/build/svg/issue-draft-16.svg"
 	import {collection} from "./state.ts"
 	import PlayIcon from "./PlayIcon.svelte"
+	import {b64Cache} from "./b64Cache.ts"
 
 	export let id: string
 
@@ -29,7 +30,14 @@
 
 <button class:selected class:ready class:processing type="button" on:click={onClick} {disabled}>
 	<div class="art">
-		<img src={meta?.albumArtwork ?? artSrc} alt={meta?.albumName ?? heading} />
+		{#if meta?.albumArtwork}
+			{#await b64Cache("album-art") then artCache}
+				{@const src = artCache.get(meta.albumArtwork)}
+				<img alt="artwork" {src} />
+			{/await}
+		{:else}
+			<img src={artSrc} alt={meta?.albumName ?? heading} />
+		{/if}
 	</div>
 	<h1>{meta?.title ?? heading}</h1>
 	<h2>{meta?.artist ?? subheading}</h2>
