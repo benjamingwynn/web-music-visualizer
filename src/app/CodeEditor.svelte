@@ -55,6 +55,8 @@
 	}
 
 	function run(newCode: string) {
+		localStorage.codeBackup = newCode
+
 		// localStorage._editorValue = code
 		console.log("compiling...")
 		const runtimeCode = tsBlankSpace(newCode)
@@ -186,12 +188,7 @@
 				type="button"
 				on:click={() => {
 					const code = editor.getValue()
-
-					console.log("compiling...")
-					const runtimeCode = tsBlankSpace(code)
-					console.log("... compile okay!")
-
-					doEval(runtimeCode)
+					run(code)
 				}}>execute code</button
 			>
 			<label><input type="checkbox" bind:checked={evalOnChange} /> automatically execute on code change</label>
