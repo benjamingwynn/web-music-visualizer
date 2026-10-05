@@ -55,7 +55,7 @@ export class MusicCanvas {
 				this.currentVisualizationRender(delta, music)
 				this.error.set(null)
 			} catch (err) {
-				this.error.set("Cannot draw due to an error.")
+				this.error.set(err.stack.toString())
 				console.error("[draw error]", err)
 			}
 		}
@@ -89,7 +89,7 @@ export class MusicCanvas {
 			this.error.set(null)
 		} catch (err) {
 			console.error("[init error]", err)
-			this.error.set("Cannot initialize due to an error.")
+			this.error.set(err.stack.toString())
 			return
 		}
 

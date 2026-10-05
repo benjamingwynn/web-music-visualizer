@@ -234,7 +234,8 @@
 		bottom: 0;
 		left: 0;
 		position: fixed;
-		background-color: pink;
+		background-color: black;
+		white-space: pre;
 		color: darkred;
 		font-weight: bold;
 		border: red solid thin;
