@@ -65,7 +65,7 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 			console.log("using embedded artwork")
 		}
 	}
-	let year = probed.common.year ?? probed.common.originalyear
+	let year = probed.common.originalyear ?? probed.common.year
 	if (year !== undefined && year < 1850) year = undefined // ageist
 	if (year !== undefined && year > 2500) year = undefined // planned obsolescence
 	const rtn: SongMetadata = {
