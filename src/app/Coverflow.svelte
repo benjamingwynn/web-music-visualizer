@@ -122,7 +122,6 @@
 		overflow-x: scroll;
 		scroll-snap-type: x mandatory;
 		align-self: stretch;
-		background: radial-gradient(black 30%, transparent);
 	}
 
 	.coverflow::before,

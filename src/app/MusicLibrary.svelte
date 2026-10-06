@@ -78,6 +78,7 @@
 		bottom: 0;
 		backdrop-filter: blur(10px);
 		background-color: rgba(0, 0, 0, 0.4);
+		background-image: radial-gradient(black 30%, transparent);
 		display: grid;
 		visibility: visible;
 		transition: all 0.35s;
