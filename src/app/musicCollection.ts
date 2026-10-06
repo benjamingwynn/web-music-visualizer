@@ -13,6 +13,7 @@ export type SongMetadata = {
 	albumName: string
 	albumArtwork?: number
 	albumArtist?: string
+	year?: number
 	track: number
 	artist: string
 }
@@ -54,7 +55,7 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 	console.time("metadata probe")
 
 	let biggestImageNumber = inherit?.albumArtwork
-	let biggestImage = biggestImageNumber ? albumArt.get(biggestImageNumber) : null
+	let biggestImage = biggestImageNumber != null ? albumArt.get(biggestImageNumber) : null
 	const probed = await probe(await f.getFile())
 	for (const picture of probed.common.picture ?? []) {
 		const artUrl = `data:${picture.format};base64,${uint8ArrayToBase64(picture.data)}`
@@ -64,11 +65,15 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 			console.log("using embedded artwork")
 		}
 	}
+	let year = probed.common.year ?? probed.common.originalyear
+	if (year !== undefined && year < 1850) year = undefined // ageist
+	if (year !== undefined && year > 2500) year = undefined // planned obsolescence
 	const rtn: SongMetadata = {
 		...inherit,
 		albumArtwork: biggestImageNumber,
 		albumName: probed.common.album ?? "Unidentified Album",
 		albumArtist: probed.common.albumartist ?? probed.common.artist ?? "Unidentified Artist",
+		year,
 		artist: probed.common.artist ?? "Unidentified Artist",
 		title: probed.common.title ?? path,
 		track: probed.common.track.no ?? 0,
@@ -93,6 +98,16 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 	const songs: Song[] = []
 	const _albums = {} as Record<string, Song[]>
 	const albums = writable(_albums)
+	const albumInfo = new Map<string, {artist: string; name: string; year?: number}>()
+	const trackInfo = new Map<Song, {track: number; title: string}>()
+	const sortAlbums = () =>
+		Object.fromEntries(
+			Object.entries(_albums).sort(([a], [b]) => {
+				const A = albumInfo.get(a)!
+				const B = albumInfo.get(b)!
+				return A.artist.localeCompare(B.artist) || (A.year ?? Infinity) - (B.year ?? Infinity) || A.name.localeCompare(B.name)
+			})
+		)
 
 	let pending = 0
 	let walkDone = false
@@ -120,7 +135,8 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				collectionLoadState.set('Loading cover art from "' + dirPath + '"...')
 				const file = await val.getFile()
 				const b64 = await fileToBase64(file)
-				const url = "data:image/jpeg;base64," + b64
+				const mime = file.type || (key.endsWith(".png") ? "image/png" : "image/jpeg")
+				const url = `data:${mime};base64,${b64}`
 				albumArtwork = albumArt.put(url)
 			}
 		}
@@ -139,11 +155,11 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				if (!["mp3", "wav", "flac"].includes(extension ?? "")) {
 					continue
 				}
-				const defaultSong = {...UNKNOWN_SONG, title: key}
-				if (albumArtwork) defaultSong.albumArtwork = albumArtwork
+				const defaultSong: SongMetadata = {...UNKNOWN_SONG, title: key}
+				if (albumArtwork != null) defaultSong.albumArtwork = albumArtwork
 
 				pending++
-				const metaPromise = metaQueue(() => getMetadataFor(metaCache, path, val, albumArtwork ? {albumArtwork} : undefined))
+				const metaPromise = metaQueue(() => getMetadataFor(metaCache, path, val, albumArtwork != null ? {albumArtwork} : undefined))
 				metaPromise.catch(() => {
 					pending--
 					settle()
@@ -157,16 +173,19 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 
 						const k = m.albumArtist + "::" + m.albumName
 						_albums[k] = _albums[k] ?? []
-						// having the album be an array with holes in it kinda sucks and is hacky
-						if (_albums[k][m.track]) {
-							// this is a bit hacky
-							console.warn("duplicate track detected!! @", m.track, "for", m.title, "on", m.albumName)
-							_albums[k][m.track + 99] = song // ?
-						} else {
-							_albums[k][m.track] = song
-							console.log("for", m.albumName, "push", m.title, "to spot", m.track)
-						}
-						albums.set(Object.fromEntries(Object.entries(_albums).sort(([a], [b]) => a.localeCompare(b))))
+						const info = albumInfo.get(k) ?? {artist: m.albumArtist ?? "", name: m.albumName}
+						// album year is the earliest year of any of its tracks
+						if (m.year != null && (info.year == null || m.year < info.year)) info.year = m.year
+						albumInfo.set(k, info)
+						// keep each album as a dense array ordered by track number (then title)
+						trackInfo.set(song, {track: m.track, title: m.title})
+						_albums[k].push(song)
+						_albums[k].sort((a, b) => {
+							const A = trackInfo.get(a)!
+							const B = trackInfo.get(b)!
+							return A.track - B.track || A.title.localeCompare(B.title)
+						})
+						albums.set(sortAlbums())
 						console.log("add to album!", m.albumName, m.track)
 
 						pending--

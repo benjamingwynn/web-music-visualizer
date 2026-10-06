@@ -104,6 +104,7 @@
 		<div></div>
 	</div>
 	<h2>{$meta.artist}</h2>
+	<h3>{$meta.year ?? ""}</h3>
 </div>
 
 <style>
@@ -181,7 +182,8 @@
 	}
 
 	h1,
-	h2 {
+	h2,
+	h3 {
 		opacity: 0.5;
 		transition:
 			opacity 0.3s,
@@ -200,5 +202,18 @@
 		font-size: 1.3em;
 		text-align: center;
 		z-index: 1;
+	}
+
+	h3 {
+		margin: 0;
+		text-align: center;
+		opacity: 0;
+		color: rgb(158, 158, 158);
+		position: relative;
+		top: 0.2em;
+	}
+
+	.album.selected h3 {
+		opacity: 0.8;
 	}
 </style>
