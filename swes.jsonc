@@ -7,6 +7,6 @@
 	},
 	"staticBuilders": {
 		"/api.d.ts": "npx tsc src/audio/api.ts --declaration --emitDeclarationOnly --outFile $1 || true",
-		"/list.txt": "ls src/visualizations | col",
+		"/list.txt": "ls -1 src/visualizations",
 	},
 }
