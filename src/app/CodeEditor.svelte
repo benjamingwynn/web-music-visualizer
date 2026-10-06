@@ -4,6 +4,7 @@
 	import type {Writable} from "svelte/store"
 	import tsBlankSpace from "ts-blank-space"
 	import Window from "./Window.svelte"
+	import {MusicCanvas as _MusicCanvas} from "api"
 
 	const editorFocused = getContext<Writable<boolean>>("editorFocused")
 
@@ -38,8 +39,10 @@
 
 		console.log("evaluating...", {runtimeCode})
 		try {
-			window._evalUrl = url
 			const evaluate = function evaluate() {
+				var MusicCanvas = _MusicCanvas
+				// ^ should fix prod bundle not having MusicCanvas available
+				// TODO: replace this eval with something sane, is sandboxed worker with OffscreenCanvas possible?
 				eval(runtimeCode)
 			}
 			evaluate()
