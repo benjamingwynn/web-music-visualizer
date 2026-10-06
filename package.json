@@ -11,7 +11,7 @@
 		"@types/wicg-file-system-access": "^2023.10.7",
 		"@webgpu/types": "^0.1.54",
 		"monaco-editor": "0.52",
-		"musiq": "file:../musiq-v2",
+		"musiq": "benjamingwynn/musiq",
 		"svelte": "4",
 		"swes": "benjamingwynn/swes",
 		"ts-blank-space": "^0.6.1",
