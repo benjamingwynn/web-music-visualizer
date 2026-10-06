@@ -40,6 +40,10 @@
 		console.log("evaluating...", {runtimeCode})
 		try {
 			const evaluate = function evaluate() {
+				window._evalUrl = url
+				// ^ this is a hack so that when we're eval-ing the file, we know where it came from,
+				// and so MusicCanvas::registerVisualization can say what URL made the visual even
+				// though we're technically in an eval, so stack wouldn't work
 				var MusicCanvas = _MusicCanvas
 				// ^ should fix prod bundle not having MusicCanvas available
 				// TODO: replace this eval with something sane, is sandboxed worker with OffscreenCanvas possible?
