@@ -105,7 +105,7 @@
 		<h1>{$meta.albumName}</h1>
 		<div></div>
 	</div>
-	<h2>{$meta.artist}</h2>
+	<h2>{$meta.albumArtist ?? $meta.artist}</h2>
 	<h3>{$meta.year ?? ""}</h3>
 </div>
 
