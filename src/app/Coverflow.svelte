@@ -111,6 +111,7 @@
 						{key}
 						size={albumSize}
 						meta={song.meta}
+						disableInteraction={horizontalScrolling && selectedIndex === index}
 						{index}
 						{startIndex}
 						{endIndex}

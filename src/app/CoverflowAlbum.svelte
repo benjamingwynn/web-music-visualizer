@@ -17,6 +17,7 @@
 	export let onClick: (isSelected: boolean, alt: boolean) => Promise<void>
 	export let size: number
 	export let zooming: boolean
+	export let disableInteraction = false
 
 	$: pitchAmount = size * 0.1
 
@@ -63,6 +64,7 @@
 	class:clicked
 	tabindex="0"
 	on:click={async (ev) => {
+		if (disableInteraction) return
 		if (clicked) return
 		if (iAmSelected) {
 			if (playingThis) {
