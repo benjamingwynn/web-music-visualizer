@@ -103,7 +103,7 @@
 			<PlayIcon hidden={!playingThis} />
 		</div>
 		<h1>{$meta.albumName}</h1>
-		<div></div>
+		<div class="after"></div>
 	</div>
 	<h2>{$meta.albumArtist ?? $meta.artist}</h2>
 	<h3>{$meta.year ?? ""}</h3>
@@ -116,6 +116,10 @@
 		align-self: center;
 		transition: transform 0.15s;
 		outline: none;
+		flex-shrink: 0;
+		width: var(--size);
+		/* fix the vertical size so that text wrapping doesn't shift Y position in vertically centered layout */
+		height: var(--size);
 	}
 
 	.alum:focus {
@@ -164,10 +168,12 @@
 	}
 
 	.title {
-		width: var(--size);
 		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+		grid-template-columns: 2em auto 2em;
 		margin-top: 0.7em;
+		margin-top: 0.7em;
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.badges {
