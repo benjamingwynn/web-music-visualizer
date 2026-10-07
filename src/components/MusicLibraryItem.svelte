@@ -3,6 +3,7 @@
 	import type {SongMetadata} from "../collection/musicCollection"
 	import {showLibrary} from "../app/state"
 	import {DEFAULT_ALBUM_ART} from "../app/config"
+	import {b64Cache} from "../util/b64Cache"
 
 	export let metadata: Writable<SongMetadata>
 	export let handle: FileSystemFileHandle
@@ -22,7 +23,10 @@
 		$showLibrary = false
 	}}
 >
-	<img alt="artwork" src={$metadata.albumArtwork ?? DEFAULT_ALBUM_ART} />
+	{#await b64Cache("album-art") then artCache}
+		{@const src = $metadata.albumArtwork ? artCache.get($metadata.albumArtwork) : DEFAULT_ALBUM_ART}
+		<img alt="artwork" {src} />
+	{/await}
 	<h5>{title}</h5>
 	<h6>{$metadata.albumName} - {artist}</h6>
 </button>
