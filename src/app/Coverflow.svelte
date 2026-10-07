@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type {Writable} from "svelte/store"
-	import type {MusicCollection} from "./musicCollection"
+	import type {MusicCollection, Song} from "./musicCollection"
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
 	import {collection, nowPlayingId, showLibrary} from "./state"
 	import {DEFAULT_ALBUM_ART} from "./config"
-	import {beforeUpdate, afterUpdate, tick} from "svelte"
+	import {beforeUpdate, afterUpdate, tick, onMount} from "svelte"
 
 	let scale = 1
 	$: albumSize = 600 * scale
@@ -12,13 +12,35 @@
 	export let pleaseQueueMusic: (files: File[]) => void
 	export let pleaseClearQueue: () => void
 
-	$: albums = $collection?.albums
+	let horizontalScrolling = false
+	let zooming = false
+
+	// don't update DOM while user interacting to avoid messing with scroll position
+	let triggerAlbumsUpdate = false
+	$: backendAlbums = $collection?.albums
+	let albums: Record<string, Song[]> | undefined = undefined
+	$: {
+		$backendAlbums
+		triggerAlbumsUpdate = true
+	}
+	let frameN: number = -1
+	const f = () => {
+		if (triggerAlbumsUpdate && !horizontalScrolling && !zooming) {
+			albums = $backendAlbums
+			triggerAlbumsUpdate = false
+		}
+		frameN = requestAnimationFrame(f)
+	}
+	onMount(() => {
+		frameN = requestAnimationFrame(f)
+		return () => {
+			cancelAnimationFrame(frameN)
+		}
+	})
 
 	let scrollContainer: Element
 	let scrollPosition = 0
 
-	let horizontalScrolling = false
-	let zooming = false
 	let scrollEndTimer: number
 
 	$: albumsPerPage = (scrollContainer?.clientWidth ?? 0) / albumSize
@@ -29,8 +51,7 @@
 	$: selectedKey = (scrollContainer?.querySelector(`div[data-index="${selectedIndex}"]`) as HTMLElement | undefined)?.dataset.key
 	afterUpdate(() => {
 		if (selectedKey) {
-			// try to fix scroll pos when adding things before/after
-			// (sadly this doesn't work for when we're actually scrolling so just disable when we are scrolling)
+			// fix scroll pos when adding things before/after the select item with a clever hack
 			const e = scrollContainer.querySelector(`div[data-key="${selectedKey}"]`)
 			e?.scroll()
 		}
@@ -81,8 +102,8 @@
 
 <div bind:this={scrollContainer} class="outer" on:wheel={handleZoom} on:scroll={handleScroll}>
 	<div class="coverflow" style:--size={albumSize + "px"}>
-		{#if $albums}
-			{#each Object.entries($albums) as [key, album], index (key)}
+		{#if albums}
+			{#each Object.entries(albums) as [key, album], index (key)}
 				<!-- kinda a hack but just find the first song -->
 				{@const song = album.find((x) => x)}
 				{#if song}
