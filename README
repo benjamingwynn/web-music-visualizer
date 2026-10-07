@@ -4,11 +4,13 @@ an in-browser music visualization experiment mostly developed around 2023
 
 entirely locally processes music and plays it with programmatic visuals, like Windows Media Player or Milkdrop but in the browser and with code you can mess with
 
-note that the user interface was never finished for this project, so things may be a bit rough around the edges
+note that the user interface is still a work in progress, so things may be a bit rough around the edges
 
 this is powered by my [musIQ](https://github.com/benjamingwynn/musIQ) library
 
 live demo available at https://musiq-testing.netlify.app/
+
+netlify automatically builds and publishes the repo from the `release` branch
 
 this does not do any external communication, once you've opened the webpage and musiq's models have been loaded onto your machine, that's it. there is no server, no telemetry, no tracking.
 
@@ -30,9 +32,9 @@ other key binds:
 - `p` previous visualization
 - `o` open the file picker
 - `f` toggle fullscreen
+- `esc` open library view
 
 ### building
 
 - npm i
-- npm run build-monaco-workers
 - npm start (OR) npm run build

@@ -1,3 +1,6 @@
+<script lang="ts">
+</script>
+
 <div class="frame">
 	<div class="outer">
 		<div class="inner"></div>

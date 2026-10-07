@@ -2,11 +2,11 @@
 	import type {MusicCanvas} from "../audio/canvas"
 	import type {Analysis} from "musiq"
 	import {loadMusiq} from "../audio/musiq.ts"
-	import {pQueue} from "./pQueue.ts"
+	import {pQueue} from "../util/pQueue.ts"
 	import QueueItem from "./QueueItem.svelte"
 	import Button from "./Button.svelte"
-	import {showLibrary} from "./state.ts"
-	import {DEFAULT_ALBUM_ART} from "./config.ts"
+	import {showLibrary} from "../app/state.ts"
+	import {DEFAULT_ALBUM_ART} from "../app/config.ts"
 
 	export let musicCanvas: MusicCanvas
 	export let onSelect: (file: File) => Promise<void>

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type {Writable} from "svelte/store"
-	import type {Song, SongMetadata} from "./musicCollection"
-	import {DEFAULT_ALBUM_ART} from "./config"
-	import {sleep} from "./sleep"
+	import type {Song, SongMetadata} from "../collection/musicCollection"
+	import {DEFAULT_ALBUM_ART} from "../app/config"
+	import {sleep} from "../util/sleep"
 	import PlayIcon from "./PlayIcon.svelte"
-	import {nowPlayingId, showLibrary} from "./state"
-	import {b64Cache} from "./b64Cache"
+	import {nowPlayingId, showLibrary} from "../app/state"
+	import {b64Cache} from "../util/b64Cache"
 
 	export let key: string
 	export let meta: Writable<SongMetadata>

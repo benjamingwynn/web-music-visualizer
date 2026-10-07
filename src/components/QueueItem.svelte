@@ -6,9 +6,9 @@
 	import iconProcessing from "@primer/octicons/build/svg/gear-16.svg"
 	// import iconPending from '@primer/octicons/build/svg/circle-16.svg'
 	import iconPending from "@primer/octicons/build/svg/issue-draft-16.svg"
-	import {collection} from "./state.ts"
+	import {collection} from "../app/state.ts"
 	import PlayIcon from "./PlayIcon.svelte"
-	import {b64Cache} from "./b64Cache.ts"
+	import {b64Cache} from "../util/b64Cache.ts"
 
 	export let id: string
 

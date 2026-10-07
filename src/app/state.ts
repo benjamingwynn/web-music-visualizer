@@ -1,4 +1,4 @@
-import {type MusicCollection} from "./musicCollection.ts"
+import {type MusicCollection} from "../collection/musicCollection.ts"
 import {writable} from "svelte/store"
 
 export const showLibrary = writable(false)

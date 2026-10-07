@@ -1,12 +1,12 @@
 import {writable, type Writable} from "svelte/store"
-import {pQueue} from "./pQueue.ts"
-import {lazy} from "./lazy.ts"
-import {cache} from "./cache.ts"
-import {probe} from "./probe.ts"
-import {uint8ArrayToBase64, fileToBase64} from "./buffer.ts"
-import {collectionLoadState} from "./state.ts"
+import {pQueue} from "../util/pQueue.ts"
+import {lazy} from "../util/lazy.ts"
+import {cache} from "../util/cache.ts"
+import {identifyMusic} from "./identifyMusic.ts"
+import {uint8ArrayToBase64, fileToBase64} from "../util/buffer.ts"
+import {collectionLoadState} from "../app/state.ts"
 import {tick} from "svelte"
-import {b64Cache} from "./b64Cache.ts"
+import {b64Cache} from "../util/b64Cache.ts"
 
 export type SongMetadata = {
 	title: string
@@ -56,7 +56,7 @@ async function getMetadataFor(metaCache: Map<string, SongMetadata>, path: string
 
 	let biggestImageNumber = inherit?.albumArtwork
 	let biggestImage = biggestImageNumber != null ? albumArt.get(biggestImageNumber) : null
-	const probed = await probe(await f.getFile())
+	const probed = await identifyMusic(await f.getFile())
 	for (const picture of probed.common.picture ?? []) {
 		const artUrl = `data:${picture.format};base64,${uint8ArrayToBase64(picture.data)}`
 		if (!biggestImage || artUrl.length > biggestImage.length) {

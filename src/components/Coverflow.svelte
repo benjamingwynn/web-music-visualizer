@@ -1,9 +1,8 @@
 <script lang="ts">
 	import type {Writable} from "svelte/store"
-	import type {MusicCollection, Song} from "./musicCollection"
+	import type {MusicCollection, Song} from "../collection/musicCollection"
 	import CoverflowAlbum from "./CoverflowAlbum.svelte"
-	import {collection, nowPlayingId, showLibrary} from "./state"
-	import {DEFAULT_ALBUM_ART} from "./config"
+	import {collection, nowPlayingId, showLibrary} from "../app/state.ts"
 	import {beforeUpdate, afterUpdate, tick, onMount} from "svelte"
 
 	let scale = 1

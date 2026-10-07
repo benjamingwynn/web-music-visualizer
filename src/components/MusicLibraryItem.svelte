@@ -1,9 +1,8 @@
 <script lang="ts">
 	import type {Writable} from "svelte/store"
-	import type {SongMetadata} from "./musicCollection"
-	import {probe} from "./probe"
-	import {showLibrary} from "./state"
-	import {DEFAULT_ALBUM_ART} from "./config"
+	import type {SongMetadata} from "../collection/musicCollection"
+	import {showLibrary} from "../app/state"
+	import {DEFAULT_ALBUM_ART} from "../app/config"
 
 	export let metadata: Writable<SongMetadata>
 	export let handle: FileSystemFileHandle

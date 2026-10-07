@@ -167,7 +167,7 @@ MusicCanvas.registerVisualization("debug", {
 					"in-browser music visualization experiment",
 					"to use, add music files from your filesystem, then pick a visualization.",
 					"",
-					"alteratively, Chrome users can use the library by hitting ESC and choosing a directory",
+					"alternatively, Chrome users can use the library by hitting ESC and choosing a directory",
 					"",
 					"most visualizations are written by me or by an LLM, with interesting results!",
 					"all processing is done locally in the browser, no data is collected.",

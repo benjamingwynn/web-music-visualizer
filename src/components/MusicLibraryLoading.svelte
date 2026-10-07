@@ -1,5 +1,5 @@
 <script lang="ts">
-	import {collectionLoadState} from "./state"
+	import {collectionLoadState} from "../app/state"
 </script>
 
 <div hidden={!$collectionLoadState}>

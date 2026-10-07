@@ -1,18 +1,16 @@
 <script lang="ts">
 	import {onMount, setContext} from "svelte"
 	import {MusicCanvas} from "../audio/canvas.ts"
-	import Options from "./Options.svelte"
-	import Queue from "./Queue.svelte"
-	import MusicLibrary from "./MusicLibrary.svelte"
+	import Options from "../components/Options.svelte"
+	import Queue from "../components/Queue.svelte"
+	import MusicLibrary from "../components/MusicLibrary.svelte"
 	import type {Analysis} from "musiq"
 	import {writable} from "svelte/store"
 	import {nowPlayingId, showLibrary} from "./state.ts"
-	import QueueItem from "./QueueItem.svelte"
-	import NotChromeWarning from "./NotChromeWarning.svelte"
-	import CodeEditor from "./CodeEditor.svelte"
-	import LoadCode from "./LoadCode.svelte"
+	import NotChromeWarning from "../components/NotChromeWarning.svelte"
+	import LoadCode from "../components/LoadCode.svelte"
 	import {DEFAULT_ALBUM_ART, HIDE_UI_AFTER} from "./config.ts"
-	import {releaseWakeLock, requestWakeLock} from "./wakelock.ts"
+	import {releaseWakeLock, requestWakeLock} from "../util/wakelock.ts"
 
 	const editorFocused = writable(false)
 	setContext("editorFocused", editorFocused) //<Writable<boolean>>("editorFocused")

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Button from "./Button.svelte"
 	import Coverflow from "./Coverflow.svelte"
-	import {clearAllMetadata, openMusicCollection, type MusicCollection} from "./musicCollection"
+	import {clearAllMetadata, openMusicCollection, type MusicCollection} from "../collection/musicCollection"
 	import MusicLibraryItem from "./MusicLibraryItem.svelte"
 	import MusicLibraryLoading from "./MusicLibraryLoading.svelte"
-	import {collection, collectionLoadState, showLibrary} from "./state"
+	import {collection, collectionLoadState, showLibrary} from "../app/state"
 
 	export let pleaseQueueMusic: (files: File[]) => void
 	export let pleaseClearQueue: () => void
