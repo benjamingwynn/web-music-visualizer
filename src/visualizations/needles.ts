@@ -19,7 +19,7 @@ MusicCanvas.registerVisualization("needles", {
 			return Math.random() > 0.5 ? +1 : -1
 		}
 
-		let populationCap = 30
+		let populationCap = 50
 		const circles = new Set<Circle>()
 
 		let maxSpeed = 1
@@ -110,7 +110,7 @@ MusicCanvas.registerVisualization("needles", {
 						return
 					}
 				} else {
-					this.radius += this.age * 1e-7
+					this.radius += this.age * 5e-8
 					if (this.radius > maxRadius) {
 						this.radius = maxRadius
 					}
@@ -230,7 +230,7 @@ MusicCanvas.registerVisualization("needles", {
 			if (music && music.section.current) {
 				autoEnd = true
 				maxAge = music.section.current.bpm.avg * 20
-				maxRadius = music.section.current.perceivedLoudness.avg
+				maxRadius = music.section.current.perceivedLoudness.avg * 0.1
 				maxSpeed = Math.max(0.1, music.segment.current.perceivedLoudness)
 				minSpeed = Math.min(0.05, maxSpeed)
 
@@ -249,7 +249,7 @@ MusicCanvas.registerVisualization("needles", {
 						}
 					}
 					candidates = newCandidates
-					populationCap = candidates.length * 2
+					populationCap = candidates.length * 4
 				}
 
 				// kill/spawn stuff with music
