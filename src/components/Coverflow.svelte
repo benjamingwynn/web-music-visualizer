@@ -77,22 +77,13 @@
 		const nextScale = Math.min(Math.max(scale - ev.deltaY * 0.01, 0.5), 2)
 		if (nextScale === scale) return
 
-		const rect = scrollContainer.getBoundingClientRect()
-		const pointerX = ev.clientX - rect.left
-		const spacer = scrollContainer.clientWidth / 2
-
-		const logicalX = (scrollContainer.scrollLeft + pointerX - spacer) / albumSize
+		if (zooming) return
 
 		zooming = true
 		scale = nextScale
 
-		// wait for the new album size / scroll width to be laid out..
 		await tick()
 
-		// ...keep the same logical point beneath the cursor/fingers with math
-		scrollContainer.scrollLeft = spacer + logicalX * albumSize - pointerX
-
-		// allow the scroll event caused by the zoom correction to finish first
 		requestAnimationFrame(() => {
 			zooming = false
 		})
