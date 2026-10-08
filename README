@@ -10,7 +10,7 @@ this is powered by my [musIQ](https://github.com/benjamingwynn/musIQ) library
 
 live demo available at https://musiq-testing.netlify.app/
 
-netlify automatically builds and publishes the repo from the `release` branch
+netlify automatically builds and publishes the repo from the `production` branch
 
 this does not do any external communication, once you've opened the webpage and musiq's models have been loaded onto your machine, that's it. there is no server, no telemetry, no tracking.
 
