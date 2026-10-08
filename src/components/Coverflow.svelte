@@ -53,6 +53,10 @@
 			// fix scroll pos when adding things before/after the select item with a clever hack
 			const e = scrollContainer.querySelector(`div[data-key="${selectedKey}"]`)
 			e?.scroll()
+			// .. and a not so clever hack. not entirely sure *why* but we need to wait for an additional svelte update before scrolling sometimes. should be no harm in firing this off twice
+			tick().then(() => {
+				e?.scroll()
+			})
 		}
 	})
 
