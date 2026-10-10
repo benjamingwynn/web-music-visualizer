@@ -869,8 +869,8 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 				if (rootVelocities[vI] > 0) {
 					const v = rootVelocities[vI]
 					rootVelocities[vI] = v * velocityDecay
-					targets[i + 0] += deltaX * v * impulseScale
-					targets[i + 1] += deltaY * v * impulseScale
+					roots[i + 0] += deltaX * v * impulseScale
+					roots[i + 1] += deltaY * v * impulseScale
 				}
 
 				// const backToCenter = () => {
