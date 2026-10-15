@@ -7,3 +7,5 @@ export const nowPlayingId = writable<string | null>(null)
 
 export const collection = writable<null | MusicCollection>(null)
 export const collectionLoadState = writable<null | string>(null)
+
+export const acceptedSecurityWarning = writable(false)

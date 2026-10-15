@@ -1,33 +1,31 @@
 <script lang="ts">
-	import * as monaco from "monaco-editor"
 	import {onMount, getContext} from "svelte"
 	import type {Writable} from "svelte/store"
 	import tsBlankSpace from "ts-blank-space"
 	import Window from "./Window.svelte"
+	import Monaco from "./Monaco.svelte"
 	import {MusicCanvas as _MusicCanvas} from "api"
-
-	const editorFocused = getContext<Writable<boolean>>("editorFocused")
+	import {acceptedSecurityWarning} from "../app/state.ts"
 
 	const showVisualizationUrl = getContext<Writable<string[] | undefined>>("showVisualizationUrl")
 
 	let evalOnChange = true
 	let immediatelyEval = true
 
-	let container: HTMLElement
 	export let code: string
 	export let title: string
 	export let onChange = (code: string) => {}
 	export let hidden = false
 	export let url: string
 
-	$: hidden, requestAnimationFrame(() => editor.layout())
+	let monacoEditor: Monaco | undefined
 
-	let editor: monaco.editor.IStandaloneCodeEditor
+	$: hidden, requestAnimationFrame(() => monacoEditor?.layout())
 
 	let error: string | undefined = undefined
 
 	export const setCode = (code: string) => {
-		editor.setValue(code)
+		monacoEditor?.setValue(code)
 	}
 
 	function doEval(runtimeCode: string) {
@@ -75,97 +73,8 @@
 	}
 
 	onMount(() => {
-		if (!self.MonacoEnvironment) {
-			self.MonacoEnvironment = {
-				globalAPI: true,
-				getWorkerUrl(_workerId, label) {
-					switch (label) {
-						case "css":
-						case "less":
-						case "scss":
-							return "/monaco/language/css/css.worker.js"
-						case "html":
-						case "handlebars":
-						case "razor":
-							return "/monaco/language/html/html.worker.js"
-						case "json":
-							return "/monaco/language/json/json.worker.js"
-						case "javascript":
-						case "typescript":
-							return "/monaco/language/typescript/ts.worker.js"
-						default:
-							return "/monaco/editor/editor.worker.js"
-					}
-				},
-			}
-		}
-
-		// async fork to go get the backend types and add them into the editor
-		;(async () => {
-			const ts = monaco.languages.typescript
-			// validation settings
-			ts.typescriptDefaults.setDiagnosticsOptions({
-				noSemanticValidation: false,
-				noSyntaxValidation: false,
-			})
-
-			console.log("fetching types from backend...")
-			const musiqTypes = await (await fetch("/musiq/dist/musiq.d.ts")).text()
-			const ourTypes = await (await fetch("/api.d.ts")).text()
-			console.log("got backend types!")
-
-			// compiler options
-			ts.typescriptDefaults.setCompilerOptions({
-				target: ts.ScriptTarget.ES2020,
-				module: ts.ModuleKind.ESNext,
-				moduleResolution: ts.ModuleResolutionKind.NodeJs,
-				allowNonTsExtensions: true,
-				allowUmdGlobalAccess: true,
-			})
-
-			ts.typescriptDefaults.addExtraLib(musiqTypes, "file:///node_modules/musiq/index.d.ts")
-
-			ts.typescriptDefaults.addExtraLib(ourTypes, "file:///node_modules/MusicCanvas/index.d.ts")
-		})()
-
-		editor = monaco.editor.create(container, {
-			value: code,
-			language: "typescript",
-			theme: "vs-dark",
-			minimap: {
-				enabled: false,
-			},
-		})
-		// run()
-
-		// Focus event
-		editor.onDidFocusEditorWidget(() => {
-			$editorFocused = true
-			console.log("Editor is focused")
-		})
-
-		// Blur (unfocused) event
-		editor.onDidBlurEditorWidget(() => {
-			$editorFocused = false
-			console.log("Editor lost focus")
-		})
-
-		let lastCode = code
-		editor.onKeyUp(() => {
-			const code = editor.getValue()
-			if (code === lastCode) return
-			lastCode = code
-			onChange(code)
-			run(code)
-		})
-
 		if (immediatelyEval) {
 			run(code)
-		}
-
-		return () => {
-			$editorFocused = false
-			editor.dispose()
 		}
 	})
 </script>
@@ -179,7 +88,7 @@
 	onResize={() => {
 		console.log("resized window!")
 		requestAnimationFrame(() => {
-			editor.layout()
+			monacoEditor?.layout()
 		})
 	}}
 >
@@ -188,18 +97,39 @@
 			<div class="error">{error}</div>
 		{/if}
 
-		<div class="editor" bind:this={container}></div>
+		{#if !$acceptedSecurityWarning}
+			<div class="warning">
+				<h1>Security warning</h1>
+				<p>Editing visualisations, while cool, poses a massive security risk in its current form. This eval's on the main thread, meaning it can effectively be able to do anything on this page. <strong>You've been warned.</strong> This is for cool factor, not an exercise in best practice security.</p>
+				<button
+					type="button"
+					on:click={() => {
+						$acceptedSecurityWarning = true
+					}}>I know what I'm doing, let me edit code</button
+				>
+			</div>
+		{:else}
+			<div class="editor">
+				<Monaco
+					bind:this={monacoEditor}
+					{code}
+					onChange={(newCode) => {
+						onChange(newCode)
+						run(newCode)
+					}}
+				/>
+			</div>
 
-		<div class="controls">
-			<button
-				type="button"
-				on:click={() => {
-					const code = editor.getValue()
-					run(code)
-				}}>execute code</button
-			>
-			<label><input type="checkbox" bind:checked={evalOnChange} /> automatically execute on code change</label>
-		</div>
+			<div class="controls">
+				<button
+					type="button"
+					on:click={() => {
+						run(monacoEditor.getValue())
+					}}>execute code</button
+				>
+				<label><input type="checkbox" bind:checked={evalOnChange} /> automatically execute on code change</label>
+			</div>
+		{/if}
 	</div>
 </Window>
 
@@ -208,6 +138,10 @@
 		color: pink;
 		background: darkred;
 		border: solid thin red;
+	}
+
+	.warning {
+		height: 100%;
 	}
 
 	.outer {
