@@ -42,6 +42,19 @@ export function createAudioTracker(analysis: Analysis) {
 		while (analysis.sections[currentIndexes.section + 1] && analysis.sections[currentIndexes.section + 1].start <= time) currentIndexes.section++
 		while (analysis.tatums[currentIndexes.tatum + 1] && analysis.tatums[currentIndexes.tatum + 1].start <= time) currentIndexes.tatum++
 		while (analysis.segments[currentIndexes.segment + 1] && analysis.segments[currentIndexes.segment + 1].start <= time) currentIndexes.segment++
+
+		// resync every moment to the recovered index: a recovery rewrites all
+		// indexes at once, so all moments must be caught up, not just the
+		// one whose threshold actually fired first.
+		const sync = (thing: keyof typeof currentIndexes, things: keyof Analysis, ob: AudioMoment<any>) => {
+			ob.prev = analysis[things][currentIndexes[thing] - 1]
+			ob.current = analysis[things][currentIndexes[thing]]
+			ob.next = analysis[things][currentIndexes[thing] + 1]
+		}
+		sync("beat", "beats", beat)
+		sync("section", "sections", section)
+		sync("tatum", "tatums", tatum)
+		sync("segment", "segments", segment)
 		console.log("successful recalculation to time", time, "is", currentIndexes.beat, currentIndexes.section, currentIndexes.tatum, currentIndexes.segment)
 	}
 
@@ -66,12 +79,12 @@ export function createAudioTracker(analysis: Analysis) {
 			const nextThing = analysis[things][nextThingIndex]
 			const nextNextThing = analysis[things][nextThingIndex + 1]
 
-			// we missed the thing
+			// we missed the thing - recover: let recalculateIndexes resync every moment, then stop
 			if (nextNextThing && currentTimeInSeconds >= nextNextThing.start) {
 				console.log("missed", thing, "@", nextNextThing.start, "-im", currentTimeInSeconds)
 				recalculateIndexes(currentTimeInSeconds)
 				changed[thing] = true
-				// return update(thing, things, ob)
+				return
 			}
 
 			// we passed the thing position so hit the thing
