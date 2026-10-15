@@ -8,8 +8,10 @@
 	let container: HTMLElement
 	export let code: string
 	export let onChange = (code: string) => {}
+	export let debounceMs = 1_000
 
 	let editor: monaco.editor.IStandaloneCodeEditor
+	let timer: ReturnType<typeof setTimeout>
 
 	export const setValue = (code: string) => {
 		editor.setValue(code)
@@ -96,15 +98,16 @@
 			console.log("Editor lost focus")
 		})
 
-		let lastCode = code
-		editor.onKeyUp(() => {
-			const code = editor.getValue()
-			if (code === lastCode) return
-			lastCode = code
-			onChange(code)
+		// fires on real edits only (typing, paste, undo, find/replace, etc), debounced
+		// so half-typed code doesn't get evaluated mid-keystroke
+		editor.onDidChangeModelContent((e) => {
+			if (e.isFlush) return // setValue(), not a user edit
+			clearTimeout(timer)
+			timer = setTimeout(() => onChange(editor.getValue()), debounceMs)
 		})
 
 		return () => {
+			clearTimeout(timer)
 			$editorFocused = false
 			editor.dispose()
 		}
