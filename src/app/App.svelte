@@ -164,6 +164,7 @@
 		if (ev.key === "Escape") {
 			ev.preventDefault() // otherwise the browser stops loading network resources
 			$showLibrary = !$showLibrary
+			if (!$showLibrary) shouldHide = true
 			return
 		}
 	}
