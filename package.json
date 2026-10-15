@@ -5,7 +5,8 @@
 		"start": "npm run build-monaco-workers && swes dev",
 		"build-monaco-workers": "esbuild --bundle --target=es2017 --outdir=.monaco node_modules/monaco-editor/esm/vs/editor/editor.worker.js node_modules/monaco-editor/esm/vs/language/css/css.worker.js node_modules/monaco-editor/esm/vs/language/html/html.worker.js node_modules/monaco-editor/esm/vs/language/json/json.worker.js node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js",
 		"build": "npm run build-monaco-workers && swes build",
-		"release": "git push --force origin master:production"
+		"release": "git push --force origin master:production",
+		"test": "node --import bests --enable-source-maps --test"
 	},
 	"devDependencies": {
 		"@primer/octicons": "19",
@@ -16,6 +17,7 @@
 		"svelte": "4",
 		"swes": "benjamingwynn/swes",
 		"ts-blank-space": "^0.6.1",
+		"bests": ">=0.0.4",
 		"music-metadata": "^12.0.0",
 		"typescript": "5.8"
 	}
