@@ -42,10 +42,12 @@
 				// ^ this is a hack so that when we're eval-ing the file, we know where it came from,
 				// and so MusicCanvas::registerVisualization can say what URL made the visual even
 				// though we're technically in an eval, so stack wouldn't work
-				var MusicCanvas = _MusicCanvas
-				// ^ should fix prod bundle not having MusicCanvas available
-				// TODO: replace this eval with something sane, is sandboxed worker with OffscreenCanvas possible?
-				eval(runtimeCode)
+
+				// FUTURE: replace this eval with something better.
+				// perhaps worker in iframe - but browser support isn't quite there in 2026....
+				// ...or perhaps be sane and don't let the user change visualizations?
+				// but that requires compromising on the vision - so... eval stays :)
+				new Function("MusicCanvas", runtimeCode)(_MusicCanvas)
 			}
 			evaluate()
 			error = undefined
