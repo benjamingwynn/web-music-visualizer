@@ -129,7 +129,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 		collectionLoadState.set('Searching "' + dirPath + '" for music and cover art...')
 		// look for sibling album art *first*
 		for await (const [key, val] of dir.entries()) {
-			if (val.kind === "file" && ["cover.jpg", "album.jpg", "folder.jpg", "front.jpg", "cover.png", "album.png", "folder.png", "front.png"].includes(key)) {
+			if (val.kind === "file" && ["cover.jpg", "album.jpg", "folder.jpg", "front.jpg", "cover.png", "album.png", "folder.png", "front.png"].includes(key.toLowerCase())) {
 				const path = dirPath + "/" + key
 				console.warn("loading album art from", path)
 				collectionLoadState.set('Loading cover art from "' + dirPath + '"...')
@@ -151,7 +151,7 @@ export async function openMusicCollection(): Promise<MusicCollection> {
 				walking.push(walk(path, val))
 			} else {
 				// only include known file extensions
-				const extension = key.split(".").at(-1)
+				const extension = key.split(".").at(-1)?.toLowerCase()
 				if (!["mp3", "wav", "flac"].includes(extension ?? "")) {
 					continue
 				}
