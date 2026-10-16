@@ -1,5 +1,9 @@
 let wakeLock: WakeLockSentinel | null = null
 
+export function hasWakeLock() {
+	return wakeLock !== null
+}
+
 export async function requestWakeLock() {
 	if (!("wakeLock" in navigator)) {
 		console.warn("Wake Lock API not supported")
@@ -18,10 +22,3 @@ export async function releaseWakeLock() {
 	await wakeLock?.release()
 	wakeLock = null
 }
-
-// The browser releases the lock when the tab is hidden, so re-acquire on return
-document.addEventListener("visibilitychange", () => {
-	if (document.visibilityState === "visible" && wakeLock === null) {
-		requestWakeLock()
-	}
-})
