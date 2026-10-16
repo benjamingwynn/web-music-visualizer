@@ -18,6 +18,7 @@
 	let queue: File[] = []
 	let ready: File[] = []
 	let processing: File[] = []
+	let failed: File[] = []
 	let loadingMusiq = false
 
 	let picker: HTMLInputElement
@@ -77,13 +78,27 @@
 					const analyzer = await musiq
 					// get the data and analyze it
 					const arrayBuffer = await file.arrayBuffer()
-					const rtn = await analyzer(arrayBuffer)
-					// finished processing this file
-					processing.splice(processing.indexOf(file), 1)
-					processing = processing
-					// so its now ready
-					ready = [...ready, file]
-					return rtn
+					try {
+						const rtn = await analyzer(arrayBuffer)
+
+						// finished processing this file
+						processing.splice(processing.indexOf(file), 1)
+						processing = processing
+
+						// so its now ready
+						ready = [...ready, file]
+
+						return rtn
+					} catch (ex) {
+						// finished processing this file (cuz it broke)
+						processing.splice(processing.indexOf(file), 1)
+						processing = processing
+
+						failed = [...failed, file]
+
+						console.error("analysis error", ex)
+						throw ex
+					}
 				})
 			}
 			analyses.set(file, fn())
@@ -136,6 +151,7 @@
 			subheading={item.type}
 			processing={processing.includes(item)}
 			ready={ready.includes(item)}
+			failed={failed.includes(item)}
 			selected={selected === item}
 			artSrc={DEFAULT_ALBUM_ART}
 			pending={!processing.includes(item) && !ready.includes(item)}

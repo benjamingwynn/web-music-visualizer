@@ -6,6 +6,7 @@
 	import iconProcessing from "@primer/octicons/build/svg/gear-16.svg"
 	// import iconPending from '@primer/octicons/build/svg/circle-16.svg'
 	import iconPending from "@primer/octicons/build/svg/issue-draft-16.svg"
+	import iconFailed from "@primer/octicons/build/svg/alert-16.svg"
 	import {collection} from "../app/state.ts"
 	import PlayIcon from "./PlayIcon.svelte"
 	import {b64Cache} from "../util/b64Cache.ts"
@@ -22,6 +23,7 @@
 	export let artSrc: string | null = null
 	export let processing: boolean
 	export let ready: boolean
+	export let failed: boolean
 	export let selected: boolean
 	export let disabled: boolean
 	export let pending: boolean
@@ -45,6 +47,9 @@
 		<PlayIcon hidden={!selected} />
 		{#if ready}
 			<img alt="track is ready" class="icon ready" src={iconReady} />
+		{/if}
+		{#if failed}
+			<img alt="track failed proessing" class="icon failed" src={iconFailed} />
 		{/if}
 		{#if processing}
 			<img alt="track is processing" class="icon processing spin" src={iconProcessing} />

@@ -10,7 +10,7 @@
 	import NotChromeWarning from "../components/NotChromeWarning.svelte"
 	import LoadCode from "../components/LoadCode.svelte"
 	import {DEFAULT_ALBUM_ART, HIDE_UI_AFTER} from "./config.ts"
-	import {hasWakeLock, releaseWakeLock, requestWakeLock, wakeLock} from "../util/wakelock.ts"
+	import {hasWakeLock, releaseWakeLock, requestWakeLock} from "../util/wakelock.ts"
 
 	const editorFocused = writable(false)
 	setContext("editorFocused", editorFocused) //<Writable<boolean>>("editorFocused")
