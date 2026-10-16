@@ -1068,7 +1068,7 @@ MusicCanvas.registerVisualization("dotsAndLines", {
 					if (music.changed.section && (music.section.current?.confidence ?? 0) > 0.4) {
 						const c = music.section.current?.confidence ?? 1
 						const c2 = (music.section.current?.bpm.min ?? 120) / 120
-						const rV = 0.004 * c * c2
+						const rV = 0.0025 * c * c2
 						for (let i = 0; i < rootVelocities.length; i++) {
 							rootVelocities[i] = rV
 						}
