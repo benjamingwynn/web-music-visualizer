@@ -36,10 +36,7 @@
 		nextFrame = requestAnimationFrame(frame)
 	}
 
-	let userLoadList = localStorage.userLoadList ? JSON.parse(localStorage.userLoadList) : []
-	$: localStorage.userLoadList = JSON.stringify(userLoadList)
-	let loadList: string[]
-	$: loadList = [...userLoadList]
+	let loadList: string[] = []
 
 	// async fork to go fetch the list of available visualizations dropped in by the build system
 	fetch("/list.txt").then(async (f) => {
