@@ -35,7 +35,7 @@ export class MusicCanvas {
 		this.startVisualization([...MusicCanvas.registeredVisualizations.keys()][0])
 	}
 
-	public stop() {
+	public stopTrackingAnalysis() {
 		delete this.audioTracker
 	}
 

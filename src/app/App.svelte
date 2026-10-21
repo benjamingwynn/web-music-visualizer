@@ -68,7 +68,7 @@
 	}
 
 	async function onSelect(file: File) {
-		musicCanvas.stop()
+		musicCanvas.stopTrackingAnalysis()
 		const url = URL.createObjectURL(file)
 		audio.src = url
 		$nowPlayingId = file.name
@@ -77,7 +77,7 @@
 
 	async function pleaseStopAudio() {
 		releaseWakeLock()
-		musicCanvas.stop()
+		musicCanvas.stopTrackingAnalysis()
 		audio.pause()
 		audio.src = ""
 	}
