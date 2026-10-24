@@ -7,6 +7,8 @@
 	import Button from "./Button.svelte"
 	import {showLibrary} from "../app/state.ts"
 	import {DEFAULT_ALBUM_ART} from "../app/config.ts"
+	import {persistentStore} from "../util/persistentStore.ts"
+	import {sha256} from "../util/sha256.ts"
 
 	export let musicCanvas: MusicCanvas
 	export let onSelect: (file: File) => Promise<void>
@@ -61,6 +63,8 @@
 		await onFiles(files)
 	}
 
+	const cachedAnalysisStore = persistentStore("analysis")
+
 	export const onFiles = async (files: File[]) => {
 		const queueEmpty = queue.length === 0
 		queue = [...queue, ...files]
@@ -76,17 +80,41 @@
 					processing = [...processing, file]
 					// we gotta wait for the analyzer
 					const analyzer = await musiq
+
 					// get the data and analyze it
 					const arrayBuffer = await file.arrayBuffer()
-					try {
-						const rtn = await analyzer(arrayBuffer)
 
+					const cache = await cachedAnalysisStore
+					// hash the file, determine if its in cache
+					const hash = await sha256(arrayBuffer)
+
+					// use replacers to handle float32array
+					const stringify = (v: Analysis): string => JSON.stringify(v, (_, d) => (d instanceof Float32Array ? {_type: "Float32Array", data: Array.from(d)} : d))
+					const parse = (v: string): Analysis => JSON.parse(v, (_, d) => (d?._type === "Float32Array" && Array.isArray(d.data) ? new Float32Array(d.data) : d)) as Analysis
+
+					const ok = () => {
 						// finished processing this file
 						processing.splice(processing.indexOf(file), 1)
 						processing = processing
 
 						// so its now ready
 						ready = [...ready, file]
+					}
+
+					const fromCache = await cache.get(hash)
+					if (fromCache) {
+						const rtn = parse(fromCache)
+						ok()
+						return rtn
+					}
+
+					try {
+						const rtn = await analyzer(arrayBuffer)
+
+						const toCache = stringify(rtn)
+						await cache.set(hash, toCache)
+
+						ok()
 
 						return rtn
 					} catch (ex) {
@@ -169,6 +197,12 @@
 >
 
 <Button onClick={pleaseClearQueue}>clear queue</Button>
+
+<Button
+	onClick={async () => {
+		;(await cachedAnalysisStore).clear()
+	}}>clear analysis cache</Button
+>
 
 <input type="file" on:change={onchange} multiple bind:this={picker} />
 
