@@ -5,6 +5,7 @@ MusicCanvas.registerVisualization("waves", {
 		name: "Record Wave",
 		author: "Benjamin Gwynn",
 		description: "A groovy record spins around into waves in beat with the music.",
+		rating: 4,
 	},
 	does: (canvas) => {
 		const ctx = canvas.getContext("2d")

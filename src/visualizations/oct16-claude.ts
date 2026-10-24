@@ -35,6 +35,7 @@ MusicCanvas.registerVisualization("claude-chroma-bloom-3", {
 		author: "Claude Sonnet 5.5",
 		name: "Chroma Bloom III",
 		description: "Petals and a flowing outline for the notes, a harmony web, and a beat carried by hopping beads and ripples.",
+		rating: 2,
 	},
 	does(canvas, signal) {
 		const ctx = canvas.getContext("2d")

@@ -332,6 +332,7 @@ MusicCanvas.registerVisualization("glitch", {
 		name: "Glitch",
 		author: "Benjamin Gwynn",
 		description: "Simulated video decoding effect, moves and glitches with the music.",
+		rating: 4,
 	},
 	does: (masterCanvas: HTMLCanvasElement) => {
 		const MIN_BUDGET = 4000
@@ -363,7 +364,7 @@ MusicCanvas.registerVisualization("glitch", {
 		let mSpeed = 0.001
 		let zSpeed = 0.4
 		let speed = 0.1
-		let m = 0.0
+		let m = 0.3
 		let mRender = 0.0
 		let mPhase = 0
 		const length = targets.length

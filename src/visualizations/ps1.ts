@@ -5,7 +5,7 @@ MusicCanvas.registerVisualization("ps1", {
 		name: "80s Shape Emulator",
 		author: "Benjamin Gwynn",
 		description: "draws neon shapes in sync with the music at a low resolution",
-		rating: 5,
+		rating: 4,
 	},
 	does: (masterCanvas) => {
 		const masterCtx = masterCanvas.getContext("2d")

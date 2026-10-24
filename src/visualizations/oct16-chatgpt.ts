@@ -5,6 +5,7 @@ MusicCanvas.registerVisualization("resonance", {
 		name: "Resonance",
 		author: "OpenAI / ChatGPT [GPT-6 Astra]",
 		description: "A fixed horizon travelling through a drifting star system. Harmony shapes its rings; rhythm moves through them.",
+		rating: 1,
 	},
 
 	does(canvas, signal) {

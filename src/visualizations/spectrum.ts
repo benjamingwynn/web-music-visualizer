@@ -5,6 +5,7 @@ MusicCanvas.registerVisualization("spectrum", {
 		name: "Spectrum",
 		author: "Benjamin Gwynn",
 		description: "Simple spectrum of the playing music.",
+		rating: 2,
 	},
 	does: (masterCanvas: HTMLCanvasElement) => {
 		const targets = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
