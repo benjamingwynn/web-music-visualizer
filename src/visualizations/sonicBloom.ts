@@ -7,7 +7,7 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 		description: "An organic visualization where abstract flora blossoms and reacts to the music's rhythm, dynamics, and energy shifts. Watch as vibrant petals unfurl and contract, their size and color dictated by the song's energy spectrum and overall loudness.",
 		rating: 3,
 	},
-	does: (canvas) => {
+	does: (canvas, signal) => {
 		const ctx = canvas.getContext("2d")
 		if (!ctx) throw new Error("Could not create 2D canvas context")
 
@@ -148,7 +148,6 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 				ctx.bezierCurveTo(-scaledSize * 0.7, scaledSize * 1.5, -scaledSize * 0.3, scaledSize * 0.5, 0, 0)
 				ctx.closePath()
 				ctx.fill()
-				//ctx.stroke()
 
 				ctx.restore()
 			}
@@ -158,36 +157,35 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 
 		// Function to determine bloom color based on segment energy and section's base HSL
 		function getEnergyTintedColor(low: number, mid: number, high: number): [number, number, number] {
-			// Low energy: pushes hue towards cooler colors (e.g., more blue/purple)
-			// High energy: pushes hue towards warmer colors (e.g., more red/orange)
-			const hueShiftLow = low * 40 // Max 40 degree shift towards higher hue
-			const hueShiftHigh = high * -40 // Max 40 degree shift towards lower hue (wrapping around)
+			const hueShiftLow = low * 40
+			const hueShiftHigh = high * -40
 			let currentHue = (sectionColorHue + hueShiftLow + hueShiftHigh) % 360
-			if (currentHue < 0) currentHue += 360 // Ensure hue is positive
+			if (currentHue < 0) currentHue += 360
 
-			// Overall energy influences saturation and lightness
 			const energySum = low + mid + high
-			const saturationBoost = energySum * 30 // Max 30% saturation boost
+			const saturationBoost = energySum * 30
 			const currentSaturation = clamp(sectionColorSaturation + saturationBoost, 40, 100)
 
-			const lightnessShift = mid * 15 - low * 10 + energySum * 5 // Mid energy brightens, low darkens, overall energy brightens
+			const lightnessShift = mid * 15 - low * 10 + energySum * 5
 			const currentLightness = clamp(sectionColorLightness + lightnessShift, 20, 80)
 
 			return hslToRgb(currentHue, currentSaturation, currentLightness)
 		}
 
 		return (deltaTime, music) => {
+			// Check if the visualization has been aborted/disposed
+			if (signal.aborted) return
+
 			// Create a fading trail effect by drawing a semi-transparent rectangle
-			ctx.fillStyle = "rgba(0, 0, 0, 0.08)" // Adjust alpha for more or less trail
+			ctx.fillStyle = "rgba(0, 0, 0, 0.08)"
 			ctx.fillRect(0, 0, canvas.width, canvas.height)
 
 			if (music) {
-				// Respond to musical sections (e.g., verses, choruses)
+				// Respond to musical sections
 				if (music.changed.section && music.section.current) {
-					blooms = [] // Clear existing blooms for a fresh start in the new section
+					blooms = []
 
-					// Determine the base hue for the section based on its dominant key
-					const keys = music.section.current.keys // Float32Array of 12 pitch class confidences
+					const keys = music.section.current.keys
 					let strongestKeyIndex = 0
 					let strongestKeyConfidence = 0
 					for (let i = 0; i < 12; i++) {
@@ -196,11 +194,8 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 							strongestKeyIndex = i
 						}
 					}
-					// Map key index (0-11) to a hue (0-360 degrees)
-					// C=0 (Red), C#=1 (Orange-red), D=2 (Orange), ..., B=11 (Magenta)
 					sectionColorHue = (strongestKeyIndex / 12) * 360
 
-					// Adjust saturation and lightness based on section's confidence and loudness
 					sectionColorSaturation = lerp(50, 90, music.section.current.confidence)
 					sectionColorLightness = lerp(40, 70, music.section.current.perceivedLoudness.avg)
 				}
@@ -208,52 +203,40 @@ MusicCanvas.registerVisualization("sonic-bloom", {
 				// Respond to individual beats
 				if (music.changed.beat && music.beat.current) {
 					const beatLoudness = music.beat.current.perceivedLoudness
-					// Spawn more blooms for louder beats
 					const numNewBlooms = Math.ceil(lerp(1, 8, beatLoudness))
 					for (let i = 0; i < numNewBlooms; i++) {
 						const angle = rand(0, Math.PI * 2)
 						const radius = rand(0.01, bloomSpawnRadius)
-						const newBloom = new Bloom(
-							0.5 + Math.cos(angle) * radius, // Spawn from near center
-							0.5 + Math.sin(angle) * radius,
-							angle + rand(-Math.PI / 8, Math.PI / 8), // Slight angle variation
-							getEnergyTintedColor(0.5, 0.5, 0.5) // Initial color, will be updated by segment
-						)
-						// Louder beats result in larger initial target sizes for blooms
+						const newBloom = new Bloom(0.5 + Math.cos(angle) * radius, 0.5 + Math.sin(angle) * radius, angle + rand(-Math.PI / 8, Math.PI / 8), getEnergyTintedColor(0.5, 0.5, 0.5))
 						newBloom.targetSize = initialBloomSize + beatLoudness * maxBloomScale * rand(0.5, 1.2)
 						blooms.push(newBloom)
 					}
-					// Trim old blooms if max count is exceeded
 					while (blooms.length > maxBlooms) {
 						blooms.shift()
 					}
 				}
 
-				// Respond to musical segments (short, transient events like drum hits or vocal phrases)
+				// Respond to musical segments
 				if (music.segment.current) {
 					const segment = music.segment.current
 					const segmentColor = getEnergyTintedColor(segment.lowEnergy, segment.midEnergy, segment.highEnergy)
 
-					// Apply segment energy and color to a subset of the most recent blooms
-					const bloomsToAffect = Math.min(blooms.length, Math.ceil(maxBlooms * 0.2)) // Affect newest 20% of blooms
+					const bloomsToAffect = Math.min(blooms.length, Math.ceil(maxBlooms * 0.2))
 					for (let i = 0; i < bloomsToAffect; i++) {
-						const bloom = blooms[blooms.length - 1 - i] // Target newer blooms
-						// Smoothly transition bloom color to the segment's energy color
+						const bloom = blooms[blooms.length - 1 - i]
 						bloom.colorR = lerp(bloom.colorR, segmentColor[0], 0.1 * deltaTime)
 						bloom.colorG = lerp(bloom.colorG, segmentColor[1], 0.1 * deltaTime)
 						bloom.colorB = lerp(bloom.colorB, segmentColor[2], 0.1 * deltaTime)
 
-						// RMS energy drives individual bloom growth/fullness
 						bloom.targetSize = lerp(bloom.targetSize, maxBloomScale * segment.rmsEnergy * rand(0.8, 1.2), 0.1 * deltaTime)
-						// Zero crossing rate influences bloom's rotation speed for a subtle "wobble"
-						bloom.rotationSpeed += (segment.zeroCrossingRate - 0.5) * 0.0001 // Positive or negative wobble
-						bloom.rotationSpeed = clamp(bloom.rotationSpeed, -0.002, 0.002) // Clamp max rotation speed
+						bloom.rotationSpeed += (segment.zeroCrossingRate - 0.5) * 0.0001
+						bloom.rotationSpeed = clamp(bloom.rotationSpeed, -0.002, 0.002)
 					}
 				}
 			}
 
 			// Update and draw all active blooms
-			blooms = blooms.filter((b) => b.life > 0.01) // Filter out nearly dead blooms
+			blooms = blooms.filter((b) => b.life > 0.01)
 			for (const bloom of blooms) {
 				bloom.tick(deltaTime)
 				bloom.draw(ctx, canvas.width, canvas.height)
