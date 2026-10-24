@@ -147,7 +147,7 @@ MusicCanvas.registerVisualization("debug", {
 					ctx.fillRect(Math.floor(dx * i), Math.floor(canvas.height - h), Math.ceil(dx * (i + 1)), Math.floor(h))
 				}
 			}
-			ctx.fillStyle = "darkorange"
+			ctx.fillStyle = "midnightblue"
 
 			const cX = canvas.width / 2
 			const cY = canvas.height / 3
