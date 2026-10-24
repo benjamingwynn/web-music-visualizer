@@ -12,13 +12,13 @@
 		"@primer/octicons": "19",
 		"@types/wicg-file-system-access": "^2023.10.7",
 		"@webgpu/types": "^0.1.54",
+		"bests": ">=0.0.4",
 		"monaco-editor": "0.52",
-		"musiq": "benjamingwynn/musiq",
+		"music-metadata": "^12.0.0",
+		"musiq": "github:benjamingwynn/musiq",
 		"svelte": "4",
 		"swes": "benjamingwynn/swes",
 		"ts-blank-space": "^0.6.1",
-		"bests": ">=0.0.4",
-		"music-metadata": "^12.0.0",
 		"typescript": "5.8"
 	}
 }
